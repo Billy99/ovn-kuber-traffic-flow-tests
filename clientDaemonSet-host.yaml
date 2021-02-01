@@ -1,0 +1,22 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: web-client-host
+spec:
+  selector:
+    matchLabels:
+      name: web-client-host
+  template:
+    metadata:
+      labels:
+        name: web-client-host
+    spec:
+      hostNetwork: true
+      containers:
+      - name: web-client-host
+        image: docker.io/centos/tools:latest
+        command:
+          - /sbin/init
+        imagePullPolicy: IfNotPresent
+
