@@ -62,7 +62,7 @@ With this KIND Cluster:
 
 ### OVN-Kubernetes Running on OCP
 
-**TBD:** This section will be updated once tested/ 
+**TBD:** This section will be updated once tested.
 
 
 ## Test Pod Deployment
@@ -75,7 +75,7 @@ Test setup is as follows, create POD backed set of resources:
 Create Host-POD backed set of resources:
 * Run host-backed *'client'* (DaemonSet) on every node.
 * Run one instance of a host-backed *'server'*.
-* Create a NodePort Service for the host-backed *'server'* using NodePort 30180.
+* Create a NodePort Service for the host-backed *'server'* using NodePort 30081.
 
 The script finds a *'client'* pod on the *'Same Node'* as the pod-backed *'server'* and
 finds a *'client'* pod on a *'Different Node'* from the pod-backed *'server'*. Repeats for
@@ -111,7 +111,7 @@ kubectl delete -f svc_nodePort.yaml
 
 kubectl delete -f clientDaemonSet-host.yaml
 kubectl delete -f serverPod-host-v4.yaml
-kubectl delele -f svc_host_nodePort.yaml
+kubectl delete -f svc_host_nodePort.yaml
 ```
 
 ## Test Script Usage
@@ -126,54 +126,60 @@ To run all the tests, simply run the script.
 $ ./test.sh
 
 Default/Override Values:
+ Test Control:
   DEBUG_TEST                   false
   TEST_CASE (0 means all)      0
   VERBOSE                      false
+ From YAML Files:
   SERVER_POD_NAME              web-server-node-v4
   SERVER_HOST_POD_NAME         web-server-host-node-v4
   CLIENT_POD_NAME_PREFIX       web-client-pod
-  REMOTE_CLIENT_NODE_DEFAULT   ovn-worker4
-  REMOTE_CLIENT_NODE_BACKUP    ovn-worker5
+  SERVER_POD_PORT              8080
+  SERVER_HOST_POD_PORT         8081
   NODEPORT_SVC_NAME            my-web-service-node-v4
   NODEPORT_HOST_SVC_NAME       my-web-service-host-node-v4
   NODEPORT_POD_PORT            30080
-  NODEPORT_HOST_PORT           30180
+  NODEPORT_HOST_PORT           30081
   POD_SERVER_STRING            Server - Pod Backend Reached
   HOST_SERVER_STRING           Server - Host Backend Reached
   EXTERNAL_SERVER_STRING       The document has moved
+ Cluster Node Names:
+  REMOTE_CLIENT_NODE_DEFAULT   ovn-worker4
+  REMOTE_CLIENT_NODE_BACKUP    ovn-worker5
+ External Access:
   EXTERNAL_IP                  8.8.8.8
   EXTERNAL_URL                 google.com
 Queried Values:
  Pod Backed:
-  SERVER_IP                    10.244.0.9
-  SERVER_NODE                  ovn-worker3
-  LOCAL_CLIENT_NODE            ovn-worker3
-  LOCAL_CLIENT_POD             web-client-pod-v2xgq
+  SERVER_IP                    10.244.1.9
+  SERVER_NODE                  ovn-worker5
+  LOCAL_CLIENT_NODE            ovn-worker5
+  LOCAL_CLIENT_POD             web-client-pod-qcf52
   REMOTE_CLIENT_NODE           ovn-worker4
-  REMOTE_CLIENT_POD            web-client-pod-7crrr
-  NODEPORT_CLUSTER_IPV4        10.96.66.203
-  NODEPORT_EXTERNAL_IPV4       10.244.0.9
+  REMOTE_CLIENT_POD            web-client-pod-fq7fx
+  NODEPORT_CLUSTER_IPV4        10.96.228.161
+  NODEPORT_EXTERNAL_IPV4       10.244.1.9
  Host backed:
-  SERVER_HOST_IP               172.18.0.2
-  SERVER_HOST_NODE             ovn-worker5
+  SERVER_HOST_IP               172.18.0.8
+  SERVER_HOST_NODE             ovn-worker6
   REMOTE_CLIENT_HOST_NODE      ovn-worker4
-  LOCAL_CLIENT_HOST_POD        web-client-pod-qgsvn
-  REMOTE_CLIENT_HOST_POD       web-client-pod-7crrr
-  NODEPORT_HOST_CLUSTER_IPV4   10.96.156.240
-  NODEPORT_HOST_EXTERNAL_IPV4  172.18.0.2
+  LOCAL_CLIENT_HOST_POD        web-client-pod-z8gmj
+  REMOTE_CLIENT_HOST_POD       web-client-pod-fq7fx
+  NODEPORT_HOST_CLUSTER_IPV4   10.96.58.164
+  NODEPORT_HOST_EXTERNAL_IPV4  172.18.0.8
 
 
 FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
 ----------------------------------------------------------
 
 *** Pod to Pod (Same Node) ***
-kubectl exec -it web-client-pod-v2xgq -- curl "http://10.244.0.9:80/"
+kubectl exec -it web-client-pod-qcf52 -- curl "http://10.244.1.9:8080/"
 SUCCESS
 
 
 
 *** Pod to Pod (Different Node) ***
-kubectl exec -it web-client-pod-7crrr -- curl "http://10.244.0.9:80/"
+kubectl exec -it web-client-pod-fq7fx -- curl "http://10.244.1.9:8080/"
 SUCCESS
 
 
@@ -182,13 +188,13 @@ FLOW 02: Pod -> Cluster IP Service traffic
 ------------------------------------------
 
 *** Pod -> Cluster IP Service traffic (Same Node) ***
-kubectl exec -it web-client-pod-v2xgq -- curl "http://10.96.66.203:80/"
+kubectl exec -it web-client-pod-qcf52 -- curl "http://10.96.228.161:8080/"
 SUCCESS
 
 
 
 *** Pod -> Cluster IP Service traffic (Different Node) ***
-kubectl exec -it web-client-pod-7crrr -- curl "http://10.96.66.203:80/"
+kubectl exec -it web-client-pod-fq7fx -- curl "http://10.96.228.161:8080/"
 SUCCESS
 
 :
@@ -211,7 +217,7 @@ DEBUG_TEST=true TEST_CASE=3 VERBOSE=true ./test.sh
 
 There are a couple of sub-FLOWs that are failing and not sure if they are suppose to work or not, so there are some test-case notes for those, for example <span style="color:blue">**ERROR - NAME:30080 works but IP:30080 doesn't**</span>:
 ```
-$ TEST_CASE=3 ./test.sh
+$ DEBUG_TEST=true TEST_CASE=3 VERBOSE=true ./test.sh
 
 :
 
@@ -219,28 +225,24 @@ FLOW 03: Pod -> NodePort Service traffic (pod/host backend)
 -----------------------------------------------------------
 
 *** Pod -> NodePort Service traffic (pod backend - Same Node) ***
-kubectl exec -it web-client-pod-v2xgq -- ping 10.244.0.9 -c 3
-PING 10.244.0.9 (10.244.0.9) 56(84) bytes of data.
-64 bytes from 10.244.0.9: icmp_seq=1 ttl=64 time=0.791 ms
-64 bytes from 10.244.0.9: icmp_seq=2 ttl=64 time=0.380 ms
-64 bytes from 10.244.0.9: icmp_seq=3 ttl=64 time=0.054 ms
-
---- 10.244.0.9 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2000ms
-rtt min/avg/max/mdev = 0.054/0.408/0.791/0.301 ms
-
-kubectl exec -it web-client-pod-v2xgq -- curl "http://10.244.0.9:80/index.html"
-SUCCESS
-
-kubectl exec -it web-client-pod-v2xgq -- curl "http://my-web-service-node-v4:80/"
-SUCCESS
-
-
 ERROR - NAME:30080 works but IP:30080 doesn't
-kubectl exec -it web-client-pod-v2xgq -- curl "http://10.244.0.9:30080/"
+kubectl exec -it web-client-pod-qcf52 -- curl "http://10.244.1.9:30080/"
 command terminated with exit code 7
 FAILED
 
-kubectl exec -it web-client-pod-v2xgq -- curl "http://my-web-service-node-v4:30080/"
+kubectl exec -it web-client-pod-qcf52 -- curl "http://my-web-service-node-v4:30080/"
 SUCCESS
+
+
+
+*** Pod -> NodePort Service traffic (pod backend - Different Node) ***
+ERROR - NAME:30080 works but IP:30080 doesn't
+kubectl exec -it web-client-pod-fq7fx -- curl "http://10.244.1.9:30080/"
+command terminated with exit code 7
+FAILED
+
+kubectl exec -it web-client-pod-fq7fx -- curl "http://my-web-service-node-v4:30080/"
+SUCCESS
+
+:
 ```

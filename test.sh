@@ -9,24 +9,35 @@ NC='\033[0m' # No Color
 #
 # Default values (possible to override)
 #
+
+# Test Control
 DEBUG_TEST=${DEBUG_TEST:-false}
 TEST_CASE=${TEST_CASE:-0}
 VERBOSE=${VERBOSE:-false}
+
+# From YAML Files
 SERVER_POD_NAME=${SERVER_POD_NAME:-web-server-node-v4}
 SERVER_HOST_POD_NAME=${SERVER_HOST_POD_NAME:-web-server-host-node-v4}
+SERVER_POD_PORT=${SERVER_POD_PORT:-8080}
+SERVER_HOST_POD_PORT=${SERVER_HOST_POD_PORT:-8081}
 CLIENT_POD_NAME_PREFIX=${CLIENT_POD_NAME_PREFIX:-web-client-pod}
 CLIENT_HOST_POD_NAME_PREFIX=${CLIENT_HOST_POD_NAME_PREFIX:-web-client-host}
-REMOTE_CLIENT_NODE_DEFAULT=${REMOTE_CLIENT_NODE_DEFAULT:-ovn-worker4}
-REMOTE_CLIENT_NODE_BACKUP=${REMOTE_CLIENT_NODE_BACKUP:-ovn-worker5}
 NODEPORT_SVC_NAME=${NODEPORT_SVC_NAME:-my-web-service-node-v4}
 NODEPORT_HOST_SVC_NAME=${NODEPORT_HOST_SVC_NAME:-my-web-service-host-node-v4}
 NODEPORT_POD_PORT=${NODEPORT_POD_PORT:-30080}
-NODEPORT_HOST_PORT=${NODEPORT_HOST_PORT:-30180}
+NODEPORT_HOST_PORT=${NODEPORT_HOST_PORT:-30081}
 POD_SERVER_STRING=${POD_SERVER_STRING:-"Server - Pod Backend Reached"}
 HOST_SERVER_STRING=${HOST_SERVER_STRING:-"Server - Host Backend Reached"}
 EXTERNAL_SERVER_STRING=${EXTERNAL_SERVER_STRING:-"The document has moved"}
+
+# Cluster Node Names
+REMOTE_CLIENT_NODE_DEFAULT=${REMOTE_CLIENT_NODE_DEFAULT:-ovn-worker4}
+REMOTE_CLIENT_NODE_BACKUP=${REMOTE_CLIENT_NODE_BACKUP:-ovn-worker5}
+
+# External Access
 EXTERNAL_IP=${EXTERNAL_IP:-8.8.8.8}
 EXTERNAL_URL=${EXTERNAL_URL:-google.com}
+
 
 #
 # Query for dynamic data
@@ -93,14 +104,16 @@ NODEPORT_HOST_EXTERNAL_IPV4=$SERVER_HOST_IP
 #
 echo
 echo "Default/Override Values:"
+echo " Test Control:"
 echo "  DEBUG_TEST                   $DEBUG_TEST"
 echo "  TEST_CASE (0 means all)      $TEST_CASE"
 echo "  VERBOSE                      $VERBOSE"
+echo " From YAML Files:"
 echo "  SERVER_POD_NAME              $SERVER_POD_NAME"
 echo "  SERVER_HOST_POD_NAME         $SERVER_HOST_POD_NAME"
 echo "  CLIENT_POD_NAME_PREFIX       $CLIENT_POD_NAME_PREFIX"
-echo "  REMOTE_CLIENT_NODE_DEFAULT   $REMOTE_CLIENT_NODE_DEFAULT"
-echo "  REMOTE_CLIENT_NODE_BACKUP    $REMOTE_CLIENT_NODE_BACKUP"
+echo "  SERVER_POD_PORT              $SERVER_POD_PORT"
+echo "  SERVER_HOST_POD_PORT         $SERVER_HOST_POD_PORT"
 echo "  NODEPORT_SVC_NAME            $NODEPORT_SVC_NAME"
 echo "  NODEPORT_HOST_SVC_NAME       $NODEPORT_HOST_SVC_NAME"
 echo "  NODEPORT_POD_PORT            $NODEPORT_POD_PORT"
@@ -108,6 +121,10 @@ echo "  NODEPORT_HOST_PORT           $NODEPORT_HOST_PORT"
 echo "  POD_SERVER_STRING            $POD_SERVER_STRING"
 echo "  HOST_SERVER_STRING           $HOST_SERVER_STRING"
 echo "  EXTERNAL_SERVER_STRING       $EXTERNAL_SERVER_STRING"
+echo " Cluster Node Names:"
+echo "  REMOTE_CLIENT_NODE_DEFAULT   $REMOTE_CLIENT_NODE_DEFAULT"
+echo "  REMOTE_CLIENT_NODE_BACKUP    $REMOTE_CLIENT_NODE_BACKUP"
+echo " External Access:"
 echo "  EXTERNAL_IP                  $EXTERNAL_IP"
 echo "  EXTERNAL_URL                 $EXTERNAL_URL"
 echo "Queried Values:"
@@ -153,8 +170,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
     kubectl exec -it $LOCAL_CLIENT_POD -- ping $SERVER_IP -c 3
     echo
   fi
-  echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$SERVER_IP:80/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$SERVER_IP:80/"`
+  echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$SERVER_IP:$SERVER_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$SERVER_IP:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   echo
 
@@ -165,8 +182,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
     kubectl exec -it $REMOTE_CLIENT_POD -- ping $SERVER_IP -c 3
     echo
   fi
-  echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$SERVER_IP:80/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$SERVER_IP:80/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$SERVER_IP:$SERVER_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$SERVER_IP:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   echo
 fi
@@ -183,8 +200,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   #  kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3
   #  echo
   #fi
-  echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_CLUSTER_IPV4:80/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_CLUSTER_IPV4:80/"`
+  echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   echo
 
@@ -195,8 +212,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   #  kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3
   #  echo
   #fi
-  echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_CLUSTER_IPV4:80/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_CLUSTER_IPV4:80/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   echo
 fi
@@ -212,11 +229,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
     echo "kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_EXTERNAL_IPV4 -c 3"
     kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_EXTERNAL_IPV4 -c 3
     echo
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_EXTERNAL_IPV4:80/index.html\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_EXTERNAL_IPV4:80/index.html"`
+    echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/index.html\""
+    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/index.html"`
     process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_SVC_NAME:80/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_SVC_NAME:80/"`
+    echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
     echo
   fi
@@ -238,11 +255,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
     echo "kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_EXTERNAL_IPV4 -c 3"
     kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_EXTERNAL_IPV4 -c 3
     echo
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_EXTERNAL_IPV4:80/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_EXTERNAL_IPV4:80/"`
+    echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_SVC_NAME:80/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_SVC_NAME:80/"`
+    echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
     echo
   fi
@@ -264,11 +281,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
     echo "kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3"
     kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3
     echo
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:80/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:80/"`
+    echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_HOST_SVC_NAME:80/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_HOST_SVC_NAME:80/"`
+    echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
     echo
   fi
@@ -286,11 +303,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
     echo "kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3"
     kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3
     echo
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:80/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:80/"`
+    echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_HOST_SVC_NAME:80/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_HOST_SVC_NAME:80/"`
+    echo "kubectl exec -it $REMOTE_CLIENT_POD -- curl \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- curl "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
     echo
   fi
@@ -333,8 +350,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   #  kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3
   #  echo
   #fi
-  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_CLUSTER_IPV4:80/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_CLUSTER_IPV4:80/"`
+  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   echo
 
@@ -345,8 +362,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   #  kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3
   #  echo
   #fi
-  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_CLUSTER_IPV4:80/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_CLUSTER_IPV4:80/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   echo
 fi
@@ -362,11 +379,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
     echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_EXTERNAL_IPV4 -c 3"
     kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_EXTERNAL_IPV4 -c 3
     echo
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_EXTERNAL_IPV4:80/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_EXTERNAL_IPV4:80/"`
+    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_SVC_NAME:80/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_SVC_NAME:80/"`
+    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
     echo
   fi
@@ -388,11 +405,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
     echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_EXTERNAL_IPV4 -c 3"
     kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_EXTERNAL_IPV4 -c 3
     echo
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_EXTERNAL_IPV4:80/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_EXTERNAL_IPV4:80/"`
+    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_SVC_NAME:80/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_SVC_NAME:80/"`
+    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
     echo
   fi
@@ -421,8 +438,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ]; then
   #  kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_HOST_CLUSTER_IPV4 -c 3
   #  echo
   #fi
-  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_CLUSTER_IPV4:80/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_CLUSTER_IPV4:80/"`
+  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
   echo
 
@@ -433,8 +450,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ]; then
   #  kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_HOST_CLUSTER_IPV4 -c 3
   #  echo
   #fi
-  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_CLUSTER_IPV4:80/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_CLUSTER_IPV4:80/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
   echo
 fi
@@ -450,11 +467,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
     echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3"
     kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3
     echo
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:80/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:80/"`
+    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_SVC_NAME:80/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_SVC_NAME:80/"`
+    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
     echo
   fi
@@ -472,11 +489,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
     echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3"
     kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3
     echo
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:80/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:80/"`
+    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_SVC_NAME:80/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_SVC_NAME:80/"`
+    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
+    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- curl "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
     process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
     echo
   fi
@@ -500,11 +517,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ]; then
   #  echo "ping $NODEPORT_EXTERNAL_IPV4 -c 3"
   #  ping $NODEPORT_EXTERNAL_IPV4 -c 3
   #  echo
-  #  echo "curl \"http://$NODEPORT_EXTERNAL_IPV4:80/\""
-  #  TMP_OUTPUT=`curl "http://$NODEPORT_EXTERNAL_IPV4:80/"`
+  #  echo "curl \"http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/\""
+  #  TMP_OUTPUT=`curl "http://$NODEPORT_EXTERNAL_IPV4:$SERVER_POD_PORT/"`
   #  process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-  #  echo "curl \"http://$NODEPORT_SVC_NAME:80/\""
-  #  TMP_OUTPUT=`curl "http://$NODEPORT_SVC_NAME:80/"`
+  #  echo "curl \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
+  #  TMP_OUTPUT=`curl "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
   #  process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   #  echo
   #fi
@@ -523,11 +540,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ]; then
     echo "ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3"
     ping $NODEPORT_HOST_EXTERNAL_IPV4 -c 3
     echo
-    #echo "curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:80/\""
-    #TMP_OUTPUT=`curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:80/"`
+    #echo "curl \"http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/\""
+    #TMP_OUTPUT=`curl "http://$NODEPORT_HOST_EXTERNAL_IPV4:$SERVER_HOST_POD_PORT/"`
     #process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    #echo "curl \"http://$NODEPORT_HOST_SVC_NAME:80/\""
-    #TMP_OUTPUT=`curl "http://$NODEPORT_HOST_SVC_NAME:80/"`
+    #echo "curl \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
+    #TMP_OUTPUT=`curl "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
     #process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
     #echo
   fi
