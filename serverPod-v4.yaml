@@ -31,7 +31,7 @@ spec:
       readOnly: true
     command:
       - "python"
-    args: ["-m", "http.server", "80", "--directory", "/etc/webserver/"]
+    args: ["-m", "http.server", "8080", "--directory", "/etc/webserver/"]
     imagePullPolicy: IfNotPresent
   volumes:
   - name: webserver-index
