@@ -169,7 +169,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
   echo "FLOW 01: Typical Pod to Pod traffic (using cluster subnet)"
   echo "----------------------------------------------------------"
   echo
-  echo "*** a. Pod to Pod (Same Node) ***"
+  echo "*** 1-a: Pod to Pod (Same Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -188,7 +188,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
   echo
 
   echo
-  echo "*** b. Pod to Pod (Different Node) ***"
+  echo "*** 1-b: Pod to Pod (Different Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -213,7 +213,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   echo "FLOW 02: Pod -> Cluster IP Service traffic"
   echo "------------------------------------------"
   echo
-  echo "*** a. Pod -> Cluster IP Service traffic (Same Node) ***"
+  echo "*** 2-a: Pod -> Cluster IP Service traffic (Same Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -233,7 +233,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   echo
 
   echo
-  echo "*** b. Pod -> Cluster IP Service traffic (Different Node) ***"
+  echo "*** 2-b: Pod -> Cluster IP Service traffic (Different Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -260,7 +260,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   echo "-----------------------------------------------------------"
 
   echo
-  echo "*** a. Pod -> NodePort Service traffic (pod backend - Same Node) ***"
+  echo "*** 3-a: Pod -> NodePort Service traffic (pod backend - Same Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -309,7 +309,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
 
 
   echo
-  echo "*** b. Pod -> NodePort Service traffic (pod backend - Different Node) ***"
+  echo "*** 3-b: Pod -> NodePort Service traffic (pod backend - Different Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -358,7 +358,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
 
 
   echo
-  echo "*** c. Pod -> NodePort Service traffic (host networked pod backend - Same Node) ***"
+  echo "*** 3-c: Pod -> NodePort Service traffic (host networked pod backend - Same Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -389,6 +389,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
 
   echo "curl SvcClusterIP:NODEPORT"
   echo "kubectl exec -it $LOCAL_CLIENT_POD -- curl \"http://$NODEPORT_HOST_CLUSTER_IPV4:$NODEPORT_HOST_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- curl "http://$NODEPORT_HOST_CLUSTER_IPV4:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl EndPointIP:NODEPORT"
@@ -403,7 +404,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   echo
 
   echo
-  echo "*** d. Pod -> NodePort Service traffic (host networked pod backend - Different Node) ***"
+  echo "*** 3-d: Pod -> NodePort Service traffic (host networked pod backend - Different Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -455,7 +456,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ]; then
   echo "FLOW 04: Pod -> External Network (egress traffic)"
   echo "-------------------------------------------------"
   echo
-  echo "*** a. Pod -> External Network (egress traffic) ***"
+  echo "*** 4-a: Pod -> External Network (egress traffic) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -480,7 +481,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   echo "FLOW 05: Host Pod -> Cluster IP Service traffic (pod backend)"
   echo "---------------------------------------------------------"
   echo
-  echo "*** a. Host Pod -> Cluster IP Service traffic (pod backend - Same Node) ***"
+  echo "*** 5-a: Host Pod -> Cluster IP Service traffic (pod backend - Same Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -500,7 +501,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   echo
 
   echo
-  echo "*** b. Host Pod -> Cluster IP Service traffic (pod backend - Different Node) ***"
+  echo "*** 5-b: Host Pod -> Cluster IP Service traffic (pod backend - Different Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -526,7 +527,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
   echo "FLOW 06: Host Pod -> NodePort Service traffic (pod backend)"
   echo "-------------------------------------------------------"
   echo
-  echo "*** a. Host Pod -> NodePort Service traffic (pod backend - Same Node) ***"
+  echo "*** 6-a: Host Pod -> NodePort Service traffic (pod backend - Same Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -578,7 +579,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
   echo
 
   echo
-  echo "*** b. Host Pod -> NodePort Service traffic (pod backend - Different Node) ***"
+  echo "*** 6-b: Host Pod -> NodePort Service traffic (pod backend - Different Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -636,7 +637,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ]; then
   echo "FLOW 07: Host Pod -> Cluster IP Service traffic (host networked pod backend)"
   echo "------------------------------------------------------------------------"
   echo
-  echo "*** a. Host Pod -> Cluster IP Service traffic (host networked pod backend - Same Node) ***"
+  echo "*** 7-a: Host Pod -> Cluster IP Service traffic (host networked pod backend - Same Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -656,7 +657,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ]; then
   echo
 
   echo
-  echo "*** b. Host Pod -> Cluster IP Service traffic (host networked pod backend - Different Node) ***"
+  echo "*** 7-b: Host Pod -> Cluster IP Service traffic (host networked pod backend - Different Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -682,7 +683,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
   echo "FLOW 08: Host Pod -> NodePort Service traffic (host networked pod backend)"
   echo "----------------------------------------------------------------------"
   echo
-  echo "*** a. Host Pod -> NodePort Service traffic (host networked pod backend - Same Node) ***"
+  echo "*** 8-a: Host Pod -> NodePort Service traffic (host networked pod backend - Same Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -732,7 +733,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
   echo
 
   echo
-  echo "*** b. Host Pod -> NodePort Service traffic (host networked pod backend - Different Node) ***"
+  echo "*** 8-b: Host Pod -> NodePort Service traffic (host networked pod backend - Different Node) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -788,7 +789,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ]; then
   echo "FLOW 09: External Network Traffic -> NodePort/External IP Service (ingress traffic)"
   echo "-----------------------------------------------------------------------------------"
   echo
-  echo "*** a. External Network Traffic -> NodePort/External IP Service (ingress traffic - pod backend) ***"
+  echo "*** 9-a: External Network Traffic -> NodePort/External IP Service (ingress traffic - pod backend) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
@@ -847,7 +848,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ]; then
   #echo
 
   echo
-  echo "*** b. External Network Traffic -> NodePort/External IP Service (ingress traffic - host backend) ***"
+  echo "*** 9-b: External Network Traffic -> NodePort/External IP Service (ingress traffic - host backend) ***"
   if [ "$DEBUG_TEST" == true ]; then
     echo "DEBUG - BEGIN"
     echo
