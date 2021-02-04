@@ -34,6 +34,8 @@ spec:
       - "python"
     args: ["-m", "http.server", "8081", "--directory", "/etc/webserver/"]
     imagePullPolicy: IfNotPresent
+  nodeSelector:
+    ft.ServerPod: server
   volumes:
   - name: webserver-index
     configMap:

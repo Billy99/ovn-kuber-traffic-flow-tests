@@ -31,8 +31,7 @@ HOST_SERVER_STRING=${HOST_SERVER_STRING:-"Server - Host Backend Reached"}
 EXTERNAL_SERVER_STRING=${EXTERNAL_SERVER_STRING:-"The document has moved"}
 
 # Cluster Node Names
-REMOTE_CLIENT_NODE_DEFAULT=${REMOTE_CLIENT_NODE_DEFAULT:-ovn-worker4}
-REMOTE_CLIENT_NODE_BACKUP=${REMOTE_CLIENT_NODE_BACKUP:-ovn-worker5}
+FT_REQ_REMOTE_CLIENT_NODE=${FT_REQ_REMOTE_CLIENT_NODE:-all}
 
 # External Access
 EXTERNAL_IP=${EXTERNAL_IP:-8.8.8.8}
@@ -42,19 +41,41 @@ EXTERNAL_URL=${EXTERNAL_URL:-google.com}
 #
 # Query for dynamic data
 #
+SERVER_NODE=`kubectl get pods -o wide | grep $SERVER_POD_NAME  | awk -F' ' '{print $7}'`
+SERVER_IP=`kubectl get pods -o wide | grep $SERVER_POD_NAME  | awk -F' ' '{print $6}'`
+SERVER_HOST_IP=`kubectl get pods -o wide | grep $SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
+
+LOCAL_CLIENT_NODE=$SERVER_NODE
+REMOTE_CLIENT_NODE=$LOCAL_CLIENT_NODE
+
+
+# Find the REMOTE NODE for POD and HOST POD. (REMOTE is a node server is NOT running on)
+NODE_ARRAY=($(kubectl get nodes --no-headers=true | awk -F' ' '{print $1}'))
+for i in "${!NODE_ARRAY[@]}"
+do
+  # Check for non-master (KIND clusters don't have "worker" role set)
+  kubectl get node ${NODE_ARRAY[$i]} --no-headers=true | awk -F' ' '{print $3}' | grep -q master
+  if [ "$?" == 1 ]; then
+    if [ "$FT_REQ_REMOTE_CLIENT_NODE" == all ] || [ "$FT_REQ_REMOTE_CLIENT_NODE" == "${NODE_ARRAY[$i]}" ]; then
+      if [ "$LOCAL_CLIENT_NODE" != "${NODE_ARRAY[$i]}" ]; then
+        REMOTE_CLIENT_NODE=${NODE_ARRAY[$i]}
+      fi
+    fi
+  fi
+done
+if [ "$REMOTE_CLIENT_NODE" == "$LOCAL_CLIENT_NODE" ]; then
+  if [ "$FT_REQ_REMOTE_CLIENT_NODE" == "$REMOTE_CLIENT_NODE" ]; then
+    echo -e "${BLUE}ERROR: As requested, REMOTE_CLIENT_NODE is same as LOCAL_CLIENT_NODE: $LOCAL_CLIENT_NODE${NC}\r\n"
+  else
+    echo -e "${RED}ERROR: Unable to find REMOTE_CLIENT_NODE. Using LOCAL_CLIENT_NODE: $LOCAL_CLIENT_NODE${NC}\r\n"
+  fi
+fi
+
 
 # POD Values
 #
-SERVER_NODE=`kubectl get pods -o wide | grep $SERVER_POD_NAME  | awk -F' ' '{print $7}'`
-SERVER_IP=`kubectl get pods -o wide | grep $SERVER_POD_NAME  | awk -F' ' '{print $6}'`
 
-LOCAL_CLIENT_NODE=$SERVER_NODE
 LOCAL_CLIENT_POD=`kubectl get pods -o wide | grep $CLIENT_POD_NAME_PREFIX | grep $LOCAL_CLIENT_NODE | awk -F' ' '{print $1}'`
-
-REMOTE_CLIENT_NODE=$REMOTE_CLIENT_NODE_DEFAULT
-if [ "$SERVER_NODE" == "$REMOTE_CLIENT_NODE_DEFAULT" ]; then
-  REMOTE_CLIENT_NODE=$REMOTE_CLIENT_NODE_BACKUP
-fi
 REMOTE_CLIENT_POD=`kubectl get pods -o wide | grep $CLIENT_POD_NAME_PREFIX | grep $REMOTE_CLIENT_NODE | awk -F' ' '{print $1}'`
 
 NODEPORT_CLUSTER_IPV4=`kubectl get services | grep $NODEPORT_SVC_NAME | awk -F' ' '{print $3}'`
@@ -63,15 +84,9 @@ NODEPORT_ENDPOINT_IPV4=$SERVER_IP
 
 # HOST POD Values
 #
-SERVER_HOST_NODE=`kubectl get pods -o wide | grep $SERVER_HOST_POD_NAME  | awk -F' ' '{print $7}'`
-SERVER_HOST_IP=`kubectl get pods -o wide | grep $SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
 
-REMOTE_CLIENT_HOST_NODE=$REMOTE_CLIENT_NODE_DEFAULT
-if [ "$SERVER_HOST_NODE" == "$REMOTE_CLIENT_NODE_DEFAULT" ]; then
-  REMOTE_CLIENT_HOST_NODE=$REMOTE_CLIENT_NODE_BACKUP
-fi
-LOCAL_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_HOST_POD_NAME_PREFIX | grep $SERVER_HOST_NODE | awk -F' ' '{print $1}'`
-REMOTE_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_HOST_POD_NAME_PREFIX | grep $REMOTE_CLIENT_HOST_NODE | awk -F' ' '{print $1}'`
+LOCAL_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_HOST_POD_NAME_PREFIX | grep $LOCAL_CLIENT_NODE | awk -F' ' '{print $1}'`
+REMOTE_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_HOST_POD_NAME_PREFIX | grep $REMOTE_CLIENT_NODE | awk -F' ' '{print $1}'`
 
 NODEPORT_HOST_CLUSTER_IPV4=`kubectl get services | grep $NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
 #NODEPORT_HOST_ENDPOINT_IPV4=`kubectl get endpoints | grep $NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $2}'`
@@ -109,47 +124,46 @@ NODEPORT_HOST_ENDPOINT_IPV4=$SERVER_HOST_IP
 #
 echo
 echo "Default/Override Values:"
-echo " Test Control:"
-echo "  DEBUG_TEST                   $DEBUG_TEST"
-echo "  TEST_CASE (0 means all)      $TEST_CASE"
-echo "  VERBOSE                      $VERBOSE"
-echo " From YAML Files:"
-echo "  SERVER_POD_NAME              $SERVER_POD_NAME"
-echo "  SERVER_HOST_POD_NAME         $SERVER_HOST_POD_NAME"
-echo "  CLIENT_POD_NAME_PREFIX       $CLIENT_POD_NAME_PREFIX"
-echo "  SERVER_POD_PORT              $SERVER_POD_PORT"
-echo "  SERVER_HOST_POD_PORT         $SERVER_HOST_POD_PORT"
-echo "  NODEPORT_SVC_NAME            $NODEPORT_SVC_NAME"
-echo "  NODEPORT_HOST_SVC_NAME       $NODEPORT_HOST_SVC_NAME"
-echo "  NODEPORT_POD_PORT            $NODEPORT_POD_PORT"
-echo "  NODEPORT_HOST_PORT           $NODEPORT_HOST_PORT"
-echo "  POD_SERVER_STRING            $POD_SERVER_STRING"
-echo "  HOST_SERVER_STRING           $HOST_SERVER_STRING"
-echo "  EXTERNAL_SERVER_STRING       $EXTERNAL_SERVER_STRING"
-echo " Cluster Node Names:"
-echo "  REMOTE_CLIENT_NODE_DEFAULT   $REMOTE_CLIENT_NODE_DEFAULT"
-echo "  REMOTE_CLIENT_NODE_BACKUP    $REMOTE_CLIENT_NODE_BACKUP"
-echo " External Access:"
-echo "  EXTERNAL_IP                  $EXTERNAL_IP"
-echo "  EXTERNAL_URL                 $EXTERNAL_URL"
+echo "  Test Control:"
+echo "    DEBUG_TEST                      $DEBUG_TEST"
+echo "    TEST_CASE (0 means all)         $TEST_CASE"
+echo "    VERBOSE                         $VERBOSE"
+echo "    FT_REQ_REMOTE_CLIENT_NODE       $FT_REQ_REMOTE_CLIENT_NODE"
+echo "  From YAML Files:"
+echo "    SERVER_POD_NAME                 $SERVER_POD_NAME"
+echo "    SERVER_HOST_POD_NAME            $SERVER_HOST_POD_NAME"
+echo "    CLIENT_POD_NAME_PREFIX          $CLIENT_POD_NAME_PREFIX"
+echo "    SERVER_POD_PORT                 $SERVER_POD_PORT"
+echo "    SERVER_HOST_POD_PORT            $SERVER_HOST_POD_PORT"
+echo "    NODEPORT_SVC_NAME               $NODEPORT_SVC_NAME"
+echo "    NODEPORT_HOST_SVC_NAME          $NODEPORT_HOST_SVC_NAME"
+echo "    NODEPORT_POD_PORT               $NODEPORT_POD_PORT"
+echo "    NODEPORT_HOST_PORT              $NODEPORT_HOST_PORT"
+echo "    POD_SERVER_STRING               $POD_SERVER_STRING"
+echo "    HOST_SERVER_STRING              $HOST_SERVER_STRING"
+echo "    EXTERNAL_SERVER_STRING          $EXTERNAL_SERVER_STRING"
+echo "  External Access:"
+echo "    EXTERNAL_IP                     $EXTERNAL_IP"
+echo "    EXTERNAL_URL                    $EXTERNAL_URL"
 echo "Queried Values:"
-echo " Pod Backed:"
-echo "  SERVER_IP                    $SERVER_IP"
-echo "  SERVER_NODE                  $SERVER_NODE"
-echo "  LOCAL_CLIENT_NODE            $LOCAL_CLIENT_NODE"
-echo "  LOCAL_CLIENT_POD             $LOCAL_CLIENT_POD"
-echo "  REMOTE_CLIENT_NODE           $REMOTE_CLIENT_NODE"
-echo "  REMOTE_CLIENT_POD            $REMOTE_CLIENT_POD"
-echo "  NODEPORT_CLUSTER_IPV4        $NODEPORT_CLUSTER_IPV4"
-echo "  NODEPORT_ENDPOINT_IPV4       $NODEPORT_ENDPOINT_IPV4"
-echo " Host backed:"
-echo "  SERVER_HOST_IP               $SERVER_HOST_IP"
-echo "  SERVER_HOST_NODE             $SERVER_HOST_NODE"
-echo "  REMOTE_CLIENT_HOST_NODE      $REMOTE_CLIENT_HOST_NODE"
-echo "  LOCAL_CLIENT_HOST_POD        $LOCAL_CLIENT_HOST_POD"
-echo "  REMOTE_CLIENT_HOST_POD       $REMOTE_CLIENT_HOST_POD"
-echo "  NODEPORT_HOST_CLUSTER_IPV4   $NODEPORT_HOST_CLUSTER_IPV4"
-echo "  NODEPORT_HOST_ENDPOINT_IPV4  $NODEPORT_HOST_ENDPOINT_IPV4"
+echo "  Pod Backed:"
+echo "    SERVER_IP                       $SERVER_IP"
+echo "    SERVER_NODE                     $SERVER_NODE"
+echo "    LOCAL_CLIENT_NODE               $LOCAL_CLIENT_NODE"
+echo "    LOCAL_CLIENT_POD                $LOCAL_CLIENT_POD"
+echo "    REMOTE_CLIENT_NODE              $REMOTE_CLIENT_NODE"
+echo "    REMOTE_CLIENT_POD               $REMOTE_CLIENT_POD"
+echo "    NODEPORT_CLUSTER_IPV4           $NODEPORT_CLUSTER_IPV4"
+echo "    NODEPORT_ENDPOINT_IPV4          $NODEPORT_ENDPOINT_IPV4"
+echo "  Host backed:"
+echo "    SERVER_HOST_IP                  $SERVER_HOST_IP"
+echo "    SERVER_HOST_NODE                $SERVER_NODE"
+echo "    LOCAL_CLIENT_HOST_NODE          $LOCAL_CLIENT_NODE"
+echo "    LOCAL_CLIENT_HOST_POD           $LOCAL_CLIENT_HOST_POD"
+echo "    REMOTE_CLIENT_HOST_NODE         $REMOTE_CLIENT_NODE"
+echo "    REMOTE_CLIENT_HOST_POD          $REMOTE_CLIENT_HOST_POD"
+echo "    NODEPORT_HOST_CLUSTER_IPV4      $NODEPORT_HOST_CLUSTER_IPV4"
+echo "    NODEPORT_HOST_ENDPOINT_IPV4     $NODEPORT_HOST_ENDPOINT_IPV4"
 echo
 
 
