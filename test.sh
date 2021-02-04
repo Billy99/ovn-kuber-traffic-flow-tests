@@ -42,6 +42,9 @@ EXTERNAL_URL=${EXTERNAL_URL:-google.com}
 #
 # Query for dynamic data
 #
+
+# POD Values
+#
 SERVER_NODE=`kubectl get pods -o wide | grep $SERVER_POD_NAME  | awk -F' ' '{print $7}'`
 SERVER_IP=`kubectl get pods -o wide | grep $SERVER_POD_NAME  | awk -F' ' '{print $6}'`
 
@@ -58,6 +61,8 @@ NODEPORT_CLUSTER_IPV4=`kubectl get services | grep $NODEPORT_SVC_NAME | awk -F' 
 #NODEPORT_ENDPOINT_IPV4=`kubectl get endpoints | grep $NODEPORT_SVC_NAME | awk -F' ' '{print $2}'`
 NODEPORT_ENDPOINT_IPV4=$SERVER_IP
 
+# HOST POD Values
+#
 SERVER_HOST_NODE=`kubectl get pods -o wide | grep $SERVER_HOST_POD_NAME  | awk -F' ' '{print $7}'`
 SERVER_HOST_IP=`kubectl get pods -o wide | grep $SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
 
@@ -65,8 +70,8 @@ REMOTE_CLIENT_HOST_NODE=$REMOTE_CLIENT_NODE_DEFAULT
 if [ "$SERVER_HOST_NODE" == "$REMOTE_CLIENT_NODE_DEFAULT" ]; then
   REMOTE_CLIENT_HOST_NODE=$REMOTE_CLIENT_NODE_BACKUP
 fi
-LOCAL_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_POD_NAME_PREFIX | grep $SERVER_HOST_NODE | awk -F' ' '{print $1}'`
-REMOTE_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_POD_NAME_PREFIX | grep $REMOTE_CLIENT_HOST_NODE | awk -F' ' '{print $1}'`
+LOCAL_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_HOST_POD_NAME_PREFIX | grep $SERVER_HOST_NODE | awk -F' ' '{print $1}'`
+REMOTE_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_HOST_POD_NAME_PREFIX | grep $REMOTE_CLIENT_HOST_NODE | awk -F' ' '{print $1}'`
 
 NODEPORT_HOST_CLUSTER_IPV4=`kubectl get services | grep $NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
 #NODEPORT_HOST_ENDPOINT_IPV4=`kubectl get endpoints | grep $NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $2}'`
