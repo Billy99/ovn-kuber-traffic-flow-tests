@@ -101,12 +101,12 @@ cd ~/src/ovn-kuber-traffic-flow-tests/
 ./launch.sh
 ```
 
-This creates a *'client'* on each worker node. Each *'server'* (pod backed and host-networked
-pod backed) needs to be on the same node. So the setup scripts use labels to achieve this.
-The default is to schedule the servers on the first worker node detected. If there is a
-particular node the *'server'* pods should run on, for example on an OVS Hardware offloaded
-node, then use the following environment variable to force each *'server'* pod on a desired
-node ('FT_' stands for Flow Test):
+Each *'server'* (pod backed and host-networked pod backed) needs to be on the same node.
+So the setup scripts use labels to achieve this. The default is to schedule the servers
+on the first worker node detected. If there is a particular node the *'server'* pods
+should run on, for example on an OVS Hardware offloaded node, then use the following
+environment variable to force each *'server'* pod on a desired node ('FT_' stands for
+Flow Test).  *NOTE:* This needs to be set before the pods are launched.
 
 ```
 FT_REQ_SERVER_NODE=ovn-worker4 \
@@ -116,6 +116,25 @@ FT_REQ_SERVER_NODE=ovn-worker4 \
 
 export FT_REQ_SERVER_NODE=ovn-worker4
 ./launch.sh
+```
+
+Along the same lines, the *'launch.sh'* script creates a *'client'* (pod backed and
+host-networked pod backed) on each worker node. The *'test.sh'* script sends packets from
+the node on the same node the *'server'* pods are running on (determined as described above)
+and a remote node (node *'server'* pods are NOT running on). If there is a particular node
+that should be marked as the *' remote client'* node, for example on an OVS Hardware
+offloaded node, then use the following environment variable to force the *'test.sh'* script
+to pick as the desired node.  *NOTE:* This needs to be set before the *'test.sh'* script is
+run and can be changed between each test run.
+
+```
+FT_REQ_REMOTE_CLIENT_NODE=ovn-worker3 \
+./test.sh
+
+-- OR --
+
+export FT_REQ_REMOTE_CLIENT_NODE=ovn-worker3
+./test.sh
 ```
 
 
