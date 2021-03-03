@@ -18,4 +18,5 @@ spec:
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent
-
+      nodeSelector:
+        ft.ClientPod: client

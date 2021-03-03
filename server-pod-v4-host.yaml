@@ -41,4 +41,3 @@ spec:
     configMap:
       defaultMode: 0700
       name: server-host-index
-
