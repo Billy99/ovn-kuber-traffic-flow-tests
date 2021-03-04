@@ -37,5 +37,18 @@ if [ "$FT_SMARTNIC_SERVER" == true ] || [ "$FT_SMARTNIC_CLIENT" == true ]; then
   kubectl delete -f netAttachDef-smartNic.yaml
 fi
 
+kubectl delete -f yamls/svc_nodePort.yaml
+kubectl delete -f yamls/svc_clusterIP.yaml
+kubectl delete -f yamls/serverPod-v4.yaml
+kubectl delete -f yamls/serverPod-nodePort-v4.yaml
+kubectl delete -f yamls/serverPod-clusterIP-v4.yaml
+kubectl delete -f yamls/clientDaemonSet.yaml
+
+kubectl delete -f yamls/clientDaemonSet-host.yaml
+kubectl delete -f yamls/serverPod-host-v4.yaml
+kubectl delete -f yamls/svc_host_nodePort.yaml
+
 FT_LABEL_ACTION=delete
 manage_labels
+
+rm -rf ovn-traces/*

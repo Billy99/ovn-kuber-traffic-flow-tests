@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-pod-index
+data:
+  index.html: |
+    <!doctype html>
+    <html>
+      <head>
+        <title>Server - Pod Backend Reached</title>
+      </head>
+      <body>
+        <p>This is the Server, backed by a pod</p>
+      </body>
+    </html>
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-server-v4
+  labels:
+    pod-name: my-web-server-v4
+spec:
+  containers:
+  - name: web-server-v4
+    image: docker.io/python:3.8
+    volumeMounts:
+    - name: webserver-index
+      mountPath: /etc/webserver
+      readOnly: true
+    command:
+      - "python"
+    args: ["-m", "http.server", "8080", "--directory", "/etc/webserver/"]
+    imagePullPolicy: IfNotPresent
+  nodeSelector:
+    ft.ServerPod: server
+  volumes:
+  - name: webserver-index
+    configMap:
+      defaultMode: 0700
+      name: server-pod-index

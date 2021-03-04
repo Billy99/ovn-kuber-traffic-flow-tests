@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service-host-node-v4
+  labels:
+    pod-name: my-web-service-host-node-v4
+spec:
+  type: NodePort
+  ports:
+    - name: webserver-host-node-v4-8081
+      protocol: TCP
+      port: 8081
+      nodePort: 30081
+  selector:
+    pod-name: my-web-server-host-node-v4
+

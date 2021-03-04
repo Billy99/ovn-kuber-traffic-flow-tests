@@ -16,6 +16,17 @@ fi
 # Create normal Pods and Service
 kubectl apply -f svc-nodePort.yaml
 
+kubectl apply -f yamls/svc_nodePort.yaml
+kubectl apply -f yamls/svc_clusterIP.yaml
+kubectl apply -f yamls/serverPod-v4.yaml
+kubectl apply -f yamls/serverPod-nodePort-v4.yaml
+kubectl apply -f yamls/serverPod-clusterIP-v4.yaml
+kubectl apply -f yamls/clientDaemonSet.yaml
+
+kubectl apply -f yamls/svc_host_nodePort.yaml
+kubectl apply -f yamls/serverPod-host-v4.yaml
+kubectl apply -f yamls/clientDaemonSet-host.yaml
+
 if [ "$FT_SMARTNIC_SERVER" == true ]; then
   kubectl apply -f server-pod-v4-smartNic.yaml
 else
