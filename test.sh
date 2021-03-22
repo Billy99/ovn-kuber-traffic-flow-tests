@@ -18,16 +18,15 @@ CURL_CMD=${CURL_CMD:-curl -m 5}
 
 # From YAML Files
 SERVER_POD_NAME=${SERVER_POD_NAME:-web-server-v4}
-SERVER_CLUSTERIP_POD_NAME=${SERVER_CLUSTERIP_POD_NAME:-web-server-clusterip-v4}
-SERVER_NODEPORT_POD_NAME=${SERVER_NODEPORT_POD_NAME:-web-server-nodeport-v4}
-SERVER_HOST_POD_NAME=${SERVER_HOST_POD_NAME:-web-server-host-node-v4}
+SERVER_HOST_POD_NAME=${SERVER_HOST_POD_NAME:-web-server-host-v4}
 SERVER_POD_PORT=${SERVER_POD_PORT:-8080}
 SERVER_HOST_POD_PORT=${SERVER_HOST_POD_PORT:-8081}
 CLIENT_POD_NAME_PREFIX=${CLIENT_POD_NAME_PREFIX:-web-client-pod}
 CLIENT_HOST_POD_NAME_PREFIX=${CLIENT_HOST_POD_NAME_PREFIX:-web-client-host}
 CLUSTERIP_SVC_NAME=${CLUSTERIP_SVC_NAME:-web-service-clusterip-v4}
+CLUSTERIP_HOST_SVC_NAME=${CLUSTERIP_HOST_SVC_NAME:-web-service-clusterip-host-v4}
 NODEPORT_SVC_NAME=${NODEPORT_SVC_NAME:-web-service-nodeport-v4}
-NODEPORT_HOST_SVC_NAME=${NODEPORT_HOST_SVC_NAME:-web-service-host-node-v4}
+NODEPORT_HOST_SVC_NAME=${NODEPORT_HOST_SVC_NAME:-web-service-nodeport-host-v4}
 NODEPORT_POD_PORT=${NODEPORT_POD_PORT:-30080}
 NODEPORT_HOST_PORT=${NODEPORT_HOST_PORT:-30081}
 POD_SERVER_STRING=${POD_SERVER_STRING:-"Server - Pod Backend Reached"}
@@ -81,24 +80,19 @@ fi
 # POD Values
 #
 
-LOCAL_CLIENT_POD=`kubectl get pods -o wide | grep $CLIENT_POD_NAME_PREFIX | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
-REMOTE_CLIENT_POD=`kubectl get pods -o wide | grep $CLIENT_POD_NAME_PREFIX | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
+LOCAL_CLIENT_POD=`kubectl get pods --selector=name=web-client-pod -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
+REMOTE_CLIENT_POD=`kubectl get pods --selector=name=web-client-pod -o wide| grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
 
 CLUSTERIP_SERVICE_IPV4=`kubectl get services | grep $CLUSTERIP_SVC_NAME | awk -F' ' '{print $3}'`
+CLUSTERIP_HOST_SERVICE_IPV4=`kubectl get services | grep $CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'`
 NODEPORT_SERVICE_IPV4=`kubectl get services | grep $NODEPORT_SVC_NAME | awk -F' ' '{print $3}'`
 NODEPORT_HOST_SVC_IPV4=`kubectl get services | grep $NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-#NODEPORT_ENDPOINT_IPV4=`kubectl get endpoints | grep $NODEPORT_SVC_NAME | awk -F' ' '{print $2}'`
-NODEPORT_ENDPOINT_IPV4=$SERVER_IP
 
 # HOST POD Values
-#
 
-LOCAL_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_HOST_POD_NAME_PREFIX | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
-REMOTE_CLIENT_HOST_POD=`kubectl get pods -o wide | grep $CLIENT_HOST_POD_NAME_PREFIX | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
+LOCAL_CLIENT_HOST_POD=`kubectl get pods --selector=name=web-client-pod-host -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
+REMOTE_CLIENT_HOST_POD=`kubectl get pods --selector=name=web-client-pod-host -o wide | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
 
-NODEPORT_HOST_CLUSTER_IPV4=`kubectl get services | grep $NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-#NODEPORT_HOST_ENDPOINT_IPV4=`kubectl get endpoints | grep $NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $2}'`
-NODEPORT_HOST_ENDPOINT_IPV4=$SERVER_HOST_IP
 
 
 # NOTE: env in the container has values that could be used instead of using the above commands:
@@ -145,6 +139,8 @@ dump-working-data() {
   echo "    CLIENT_POD_NAME_PREFIX          $CLIENT_POD_NAME_PREFIX"
   echo "    SERVER_POD_PORT                 $SERVER_POD_PORT"
   echo "    SERVER_HOST_POD_PORT            $SERVER_HOST_POD_PORT"
+  echo "    CLUSTERIP_SVC_NAME              $CLUSTERIP_SVC_NAME"
+  echo "    CLUSTERIP_HOST_SVC_NAME         $CLUSTERIP_HOST_SVC_NAME"
   echo "    NODEPORT_SVC_NAME               $NODEPORT_SVC_NAME"
   echo "    NODEPORT_HOST_SVC_NAME          $NODEPORT_HOST_SVC_NAME"
   echo "    NODEPORT_POD_PORT               $NODEPORT_POD_PORT"
@@ -163,8 +159,8 @@ dump-working-data() {
   echo "    LOCAL_CLIENT_POD                $LOCAL_CLIENT_POD"
   echo "    REMOTE_CLIENT_NODE              $REMOTE_CLIENT_NODE"
   echo "    REMOTE_CLIENT_POD               $REMOTE_CLIENT_POD"
-  echo "    NODEPORT_CLUSTER_IPV4           $NODEPORT_CLUSTER_IPV4"
-  echo "    NODEPORT_ENDPOINT_IPV4          $NODEPORT_ENDPOINT_IPV4"
+  echo "    CLUSTERIP_SERVICE_IPV4          $CLUSTERIP_SERVICE_IPV4"
+  echo "    NODEPORT_SERVICE_IPV4           $NODEPORT_SERVICE_IPV4"
   echo "  Host backed:"
   echo "    SERVER_HOST_IP                  $SERVER_HOST_IP"
   echo "    SERVER_HOST_NODE                $SERVER_NODE"
@@ -172,58 +168,11 @@ dump-working-data() {
   echo "    LOCAL_CLIENT_HOST_POD           $LOCAL_CLIENT_HOST_POD"
   echo "    REMOTE_CLIENT_HOST_NODE         $REMOTE_CLIENT_NODE"
   echo "    REMOTE_CLIENT_HOST_POD          $REMOTE_CLIENT_HOST_POD"
-  echo "    NODEPORT_HOST_CLUSTER_IPV4      $NODEPORT_HOST_CLUSTER_IPV4"
-  echo "    NODEPORT_HOST_ENDPOINT_IPV4     $NODEPORT_HOST_ENDPOINT_IPV4"
+  echo "    CLUSTERIP_HOST_SERVICE_IPV4     $CLUSTERIP_HOST_SERVICE_IPV4"
+  echo "    NODEPORT_HOST_SVC_IPV4          $NODEPORT_HOST_SVC_IPV4"
   echo
 }
-echo
-echo "Default/Override Values:"
-echo "  Test Control:"
-echo "    DEBUG_TEST                      $DEBUG_TEST"
-echo "    TEST_CASE (0 means all)         $TEST_CASE"
-echo "    VERBOSE                         $VERBOSE"
-echo "    CURL_CMD                        $CURL_CMD"
-echo "    FT_REQ_REMOTE_CLIENT_NODE       $FT_REQ_REMOTE_CLIENT_NODE"
-echo "  From YAML Files:"
-echo "    SERVER_POD_NAME                 $SERVER_POD_NAME"
-echo "    SERVER_CLUSERIP_POD_NAME        $SERVER_CLUSTERIP_POD_NAME"
-echo "    SERVER_NODEPORT_POD_NAME        $SERVER_NODEPORT_POD_NAME"
-echo "    SERVER_HOST_POD_NAME            $SERVER_HOST_POD_NAME"
-echo "    CLIENT_POD_NAME_PREFIX          $CLIENT_POD_NAME_PREFIX"
-echo "    SERVER_POD_PORT                 $SERVER_POD_PORT"
-echo "    SERVER_HOST_POD_PORT            $SERVER_HOST_POD_PORT"
-echo "    CLUSTERIP_SVC_NAME              $CLUSTERIP_SVC_NAME"
-echo "    NODEPORT_SVC_NAME               $NODEPORT_SVC_NAME"
-echo "    NODEPORT_HOST_SVC_NAME          $NODEPORT_HOST_SVC_NAME"
-echo "    NODEPORT_POD_PORT               $NODEPORT_POD_PORT"
-echo "    NODEPORT_HOST_PORT              $NODEPORT_HOST_PORT"
-echo "    POD_SERVER_STRING               $POD_SERVER_STRING"
-echo "    HOST_SERVER_STRING              $HOST_SERVER_STRING"
-echo "    EXTERNAL_SERVER_STRING          $EXTERNAL_SERVER_STRING"
-echo "  External Access:"
-echo "    EXTERNAL_IP                     $EXTERNAL_IP"
-echo "    EXTERNAL_URL                    $EXTERNAL_URL"
-echo "Queried Values:"
-echo "  Pod Backed:"
-echo "    SERVER_IP                       $SERVER_IP"
-echo "    SERVER_NODE                     $SERVER_NODE"
-echo "    LOCAL_CLIENT_NODE               $LOCAL_CLIENT_NODE"
-echo "    LOCAL_CLIENT_POD                $LOCAL_CLIENT_POD"
-echo "    REMOTE_CLIENT_NODE              $REMOTE_CLIENT_NODE"
-echo "    REMOTE_CLIENT_POD               $REMOTE_CLIENT_POD"
-echo "    CLUSTERIP_SERVICE_IPV4          $CLUSTERIP_SERVICE_IPV4"
-echo "    NODEPORT_SERVICE_IPV4           $NODEPORT_SERVICE_IPV4"
-echo "    NODEPORT_HOST_SVC_IPV4           $NODEPORT_HOST_SVC_IPV4"
-echo "    NODEPORT_ENDPOINT_IPV4          $NODEPORT_ENDPOINT_IPV4"
-echo "  Host backed:"
-echo "    SERVER_HOST_IP                  $SERVER_HOST_IP"
-echo "    SERVER_HOST_NODE                $SERVER_NODE"
-echo "    LOCAL_CLIENT_HOST_NODE          $LOCAL_CLIENT_NODE"
-echo "    LOCAL_CLIENT_HOST_POD           $LOCAL_CLIENT_HOST_POD"
-echo "    REMOTE_CLIENT_HOST_NODE         $REMOTE_CLIENT_NODE"
-echo "    REMOTE_CLIENT_HOST_POD          $REMOTE_CLIENT_HOST_POD"
-echo "    NODEPORT_HOST_CLUSTER_IPV4      $NODEPORT_HOST_CLUSTER_IPV4"
-echo "    NODEPORT_HOST_ENDPOINT_IPV4     $NODEPORT_HOST_ENDPOINT_IPV4"
+
 echo
 
 
@@ -277,17 +226,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
   echo "----------------------------------------------------------"
   echo
   echo "*** 1-a: Pod to Pod (Same Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- ping $SERVER_IP -c 3"
-    kubectl exec -it $LOCAL_CLIENT_POD -- ping $SERVER_IP -c 3
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$SERVER_IP:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$SERVER_IP:$SERVER_POD_PORT/"`
@@ -297,21 +236,10 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
   ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE $SSL_ENABLE -dst=$SERVER_POD_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2pod-same-node.txt
   
   echo "*** END OF TRACE (see ovn-traces/pod2pod-same-node.txt for full detail"
-  echo
 
   echo
   echo "*** 1-b: Pod to Pod (Different Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- ping $SERVER_IP -c 3"
-    kubectl exec -it $REMOTE_CLIENT_POD -- ping $SERVER_IP -c 3
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$SERVER_IP:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$SERVER_IP:$SERVER_POD_PORT/"`
@@ -331,18 +259,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   echo "------------------------------------------"
   echo
   echo "*** 2-a: Pod -> Cluster IP Service traffic (Same Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- ping $CLUSTERIP_SERVICE_IPV4 -c 3"
-    echo -e "${BLUE}ERROR - 100% packet loss - skipped for time${NC}"
-    #kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
   
   echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/"`
@@ -350,24 +267,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   
   echo "*** 2-a:  Pod -> Cluster IP Service traffic (Same Node) TRACE ***"
   ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2clusterIPsvc-same-node.txt
-  
   echo "*** END OF TRACE (see ovn-traces/pod2clusterIPsvc-same-node.txt for full detail"
-  echo
-
+  
   echo
   echo "*** 2-b: Pod -> Cluster IP Service traffic (Different Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- ping $CLUSTERIP_SERVICE_IPV4 -c 3"
-    echo -e "${BLUE}ERROR - 100% packet loss - skipped for time${NC}"
-    #kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3
-    echo
-
-    echo "DEBUG - END"
-    echo  
-  fi
+  echo
 
   echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/"`
@@ -388,33 +292,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
 
   echo
   echo "*** 3-a: Pod -> NodePort Service traffic (pod backend - Same Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_ENDPOINT_IPV4 -c 3"
-    kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "curl SvcClusterIP:SvcPORT"
   echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/\""
@@ -426,11 +304,6 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  #echo -e "${BLUE}INVALID Command - Skip${NC}"
-  #echo
-  #TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_ENDPOINT_IPV4:$NODEPORT_POD_PORT/"`
-  #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
   echo "curl SvcName:SvcPORT"
   echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
@@ -443,35 +316,9 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
 
   echo
   echo "*** 3-b: Pod -> NodePort Service traffic (pod backend - Different Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
+  echo
 
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_ENDPOINT_IPV4 -c 3"
-    kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
-
-   echo "curl SvcClusterIP:SvcPORT"
+  echo "curl SvcClusterIP:SvcPORT"
   echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
@@ -481,11 +328,6 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  #echo -e "${BLUE}INVALID Command - Skip${NC}"
-  #echo
-  #TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_ENDPOINT_IPV4:$NODEPORT_POD_PORT/"`
-  #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
   echo "curl SvcName:SvcPORT"
   echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
@@ -494,37 +336,10 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   echo "*** 3-b: Pod -> NodePort Service traffic (pod backend - different Node) TRACE ***"
   ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2nodePortsvc-pod-backend-diff-node.txt
   echo "*** END OF TRACE (see ovn-traces/pod2nodePortsvc-pod-backend-diff-node.txt for full detail"
-  echo
 
   echo
   echo "*** 3-c: Pod -> NodePort Service traffic (host networked pod backend - Same Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3"
-    kubectl exec -it $LOCAL_CLIENT_POD -- ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "curl SvcClusterIP:SvcPort"
   echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/\""
@@ -532,8 +347,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl HostIP:NODEPORT"
-  echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/"`
+  echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl SvcName:SvcPort"
@@ -549,42 +364,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
 
   echo
   echo "*** 3-d: Pod -> NodePort Service traffic (host networked pod backend - Different Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3"
-    kubectl exec -it $REMOTE_CLIENT_POD -- ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "curl SvcClusterIP:SvcPort"
-  echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl HostIP:NODEPORT"
-  echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl SvcName:SvcPort"
@@ -605,18 +394,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ]; then
   echo "----------------------------------------------------------"
   echo
   echo "*** 4-a: Pod -> External Network (egress traffic) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $REMOTE_CLIENT_POD -- ping $EXTERNAL_IP -c 3"
-    kubectl exec -it $REMOTE_CLIENT_POD -- ping $EXTERNAL_IP -c 3
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
-
+  echo
   echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD $EXTERNAL_URL"
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD $EXTERNAL_URL`
   process-curl-output "${TMP_OUTPUT}" "${EXTERNAL_SERVER_STRING}"
@@ -624,28 +402,20 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ]; then
   echo "***  4-a: Pod -> External Network (egress traffic) TRACE ***"
    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE $SSL_ENABLE -src=$REMOTE_CLIENT_POD -remotehost=$EXTERNAL_SERVER_STRING -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2externalHost.txt
   echo "*** END OF TRACE (see ovn-traces/pod2externalHost.txt for full detail"
-  echo
-  
-  echo
 
   echo
   echo "*** 4-b: Host Pod -> External Network (egress traffic) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $EXTERNAL_IP -c 3"
-    kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $EXTERNAL_IP -c 3
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD $EXTERNAL_URL"
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD $EXTERNAL_URL`
   process-curl-output "${TMP_OUTPUT}" "${EXTERNAL_SERVER_STRING}"
   echo
+
+  echo "***  4-b: Host Pod -> External Network (egress traffic) TRACE ***"
+   echo "No Trace, traffic is never in OVN, just exiting eth0 on host"
+  echo "*** END OF TRACE (see ovn-traces/pod2externalHost.txt for full detail"
+
 fi
 
 if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
@@ -654,18 +424,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   echo "---------------------------------------------------------"
   echo
   echo "*** 5-a: Host Pod -> Cluster IP Service traffic (pod backend - Same Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $CLUSTERIP_SERVICE_IPV4 -c 3"
-    #kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+\ echo
 
   echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/"`
@@ -674,23 +433,10 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   echo "***  5-a: Host Pod -> Cluster IP Service traffic (pod backend - Same Node) TRACE ***"
   ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2clusterIPsvc-pod-backend-same-node.txt
   echo "*** END OF TRACE (see ovn-traces/pod2nodePortsvc-host-backend-diff-node.txt for full detail"
-  
-  echo
 
   echo
   echo "*** 5-b: Host Pod -> Cluster IP Service traffic (pod backend - Different Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3"
-    #kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_CLUSTER_IPV4 -c 3
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/"`
@@ -710,36 +456,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
   echo "-------------------------------------------------------"
   echo
   echo "*** 6-a: Host Pod -> NodePort Service traffic (pod backend - Same Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_ENDPOINT_IPV4 -c 3"
-    kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
-    echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error${NC}"
-    echo -e "${BLUE}Should this work?${NC}"
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
-
+  echo
   echo "curl SvcClusterIP:NODEPORT"
   echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/"`
@@ -747,7 +464,6 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
 
   echo "curl hostIP:NODEPORT"
   echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/\""
-  echo
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
 
@@ -764,56 +480,25 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
   echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-same-node.txt for full detail"
   
   echo
-
-  echo
   echo "*** 6-b: Host Pod -> NodePort Service traffic (pod backend - Different Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_ENDPOINT_IPV4 -c 3"
-    kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
-    echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error${NC}"
-    echo -e "${BLUE}Should this work?${NC}"
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "curl SvcClusterIP:NODEPORT"
   echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http:/$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/"`
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
 
   echo "curl hostIP:NODEPORT"
   echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_ENDPOINT_IPV4:$NODEPORT_POD_PORT/"`
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
 
   echo "curl SvcName:NODEPORT"
   echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
   echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error${NC}"
   echo -e "${BLUE}Should this work?${NC}"
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
-  process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
+  #TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
+  #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
   echo "*** 6-b: Host Pod -> NodePort Service traffic (pod backend - Different Node) TRACE ***"
   ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt
@@ -830,43 +515,29 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ]; then
   echo "------------------------------------------------------------------------"
   echo
   echo "*** 7-a: Host Pod -> Cluster IP Service traffic (host networked pod backend - Same Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_HOST_CLUSTER_IPV4 -c 3"
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_HOST_CLUSTER_IPV4 -c 3
-
-    echo "DEBUG - END"
-    echo
-  fi
-
-  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
+  echo
+  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$CLUSTERIP_HOST_SERVICE_IPV4:$SERVER_HOST_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$CLUSTERIP_HOST_SERVICE_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
   echo
+
+  echo "*** 7-a: Host Pod -> Cluster IP Service traffic (host networked pod backend - Same Node) TRACE ***"
+  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2clusterIPsvc-host-backend-same-node.txt
+  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
 
   echo
   echo "*** 7-b: Host Pod -> Cluster IP Service traffic (host networked pod backend - Different Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
+  echo
 
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_HOST_CLUSTER_IPV4 -c 3"
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_HOST_CLUSTER_IPV4 -c 3
-
-    echo "DEBUG - END"
-    echo
-  fi
-
-  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$CLUSTERIP_HOST_SERVICE_IPV4:$SERVER_HOST_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$CLUSTERIP_HOST_SERVICE_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
   echo
+
+  echo "*** 7-b: Host Pod -> Cluster IP Service traffic (host networked pod backend - Different Node) ***"
+  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2clusterIPsvc-host-backend-diff-node.txt
+  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
+
 fi
 
 
@@ -876,103 +547,54 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
   echo "----------------------------------------------------------------------"
   echo
   echo "*** 8-a: Host Pod -> NodePort Service traffic (host networked pod backend - Same Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3"
-    kubectl exec -it $LOCAL_CLIENT_HOST_POD -- ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
-    echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-host-node-v4; Unknown error${NC}"
-    echo -e "${BLUE}ERROR - Should this work?${NC}"
-    TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
-
+  echo
   echo "curl SvcClusterIP:NODEPORT"
-  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_CLUSTER_IPV4:$NODEPORT_HOST_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_CLUSTER_IPV4:$NODEPORT_HOST_PORT/"`
+  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl EndPointIP:NODEPORT"
-  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/"`
+  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl SvcName:NODEPORT"
-  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$NODEPORT_HOST_PORT/\""
+  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
   echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-host-node-v4; Unknown error${NC}"
-  echo -e "${BLUE}ERROR - Should this work?${NC}"
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$NODEPORT_HOST_PORT/"`
+  echo -e "${BLUE}ERROR - Should this work?  -> NO the host has no idea about svc DNS resolution${NC}"
+  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
   echo
+
+  echo "*** 8-a: Host Pod -> NodePort Service traffic (host networked pod backend - Same Node) TRACE ***"
+  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2nodePortsvc-host-backend-same-node.txt
+  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
 
   echo
   echo "*** 8-b: Host Pod -> NodePort Service traffic (host networked pod backend - Different Node) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3"
-    kubectl exec -it $REMOTE_CLIENT_HOST_POD -- ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/\""
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
-    echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-host-node-v4; Unknown error${NC}"
-    echo -e "${BLUE}ERROR - Should this work?${NC}"
-    TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
-    process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-    echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "curl SvcClusterIP:NODEPORT"
-  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_CLUSTER_IPV4:$NODEPORT_HOST_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_CLUSTER_IPV4:$NODEPORT_HOST_PORT/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl EndPointIP:NODEPORT"
-  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/\""
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/"`
+  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/\""
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl SvcName:NODEPORT"
-  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$NODEPORT_HOST_PORT/\""
+  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
   echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-host-node-v4; Unknown error${NC}"
-  echo -e "${BLUE}ERROR - Should this work?${NC}"
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$NODEPORT_HOST_PORT/"`
+  echo -e "${BLUE}ERROR - Should this work? -> NO the host has no idea about svc DNS resolution ${NC}"
+  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
   echo
+
+  echo "*** 8-b: Host Pod -> NodePort Service traffic (host networked pod backend - Different Node) TRACE ***"
+  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2nodePortsvc-host-backend-diff-node.txt
+  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
 fi
 
 
@@ -982,116 +604,41 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ]; then
   echo "-----------------------------------------------------------------------------------"
   echo
   echo "*** 9-a: External Network Traffic -> NodePort/External IP Service (ingress traffic - pod backend) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "ping $NODEPORT_ENDPOINT_IPV4 -c 3"
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #ping $NODEPORT_ENDPOINT_IPV4 -c 3
-
-    echo "curl SvcClusterIP:PORT"
-    echo "$CURL_CMD \"http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/\""
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_CLUSTER_IPV4:$SERVER_POD_PORT/"`
-    #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "$CURL_CMD \"http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/\""
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_ENDPOINT_IPV4:$SERVER_POD_PORT/"`
-    #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "$CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
-    #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-    #echo
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "curl SvcClusterIP:NODEPORT"
-  echo "$CURL_CMD \"http://$NODEPORT_CLUSTER_IPV4:$NODEPORT_POD_PORT/\""
-  echo -e "${BLUE}INVALID Command - Skip${NC}"
+  echo "$CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/\""
+  echo -e "${BLUE}INVALID Command SVCIP is only in cluster etwork - Skip${NC}"
   echo
-  #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_CLUSTER_IPV4:$NODEPORT_POD_PORT/"`
-  #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
 
   echo "curl EndPointIP:NODEPORT"
-  echo "$CURL_CMD \"http://$NODEPORT_ENDPOINT_IPV4:$NODEPORT_POD_PORT/\""
-  echo -e "${BLUE}INVALID Command - Skip${NC}"
-  echo
-  #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_ENDPOINT_IPV4:$NODEPORT_POD_PORT/"`
-  #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
+  echo "$CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/\""
+  TMP_OUTPUT=`$CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/"`
+  process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
 
   echo "curl SvcName:NODEPORT"
   echo "$CURL_CMD \"http://$NODEPORT_SVC_NAME:$NODEPORT_POD_PORT/\""
-  echo -e "${BLUE}INVALID Command - Skip${NC}"
+  echo -e "${BLUE}INVALID Command SVC HostName only resolves in cluster network - Skip${NC}"
   echo
-  #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_SVC_NAME:$NODEPORT_POD_PORT/"`
-  #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-  #echo
 
-  echo
   echo "*** 9-b: External Network Traffic -> NodePort/External IP Service (ingress traffic - host backend) ***"
-  if [ "$DEBUG_TEST" == true ]; then
-    echo "DEBUG - BEGIN"
-    echo
-
-    echo "ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3"
-    ping $NODEPORT_HOST_ENDPOINT_IPV4 -c 3
-    echo
-
-    echo "curl SvcClusterIP:PORT"
-    echo "$CURL_CMD \"http://$NODEPORT_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/\""
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_CLUSTER_IPV4:$SERVER_HOST_POD_PORT/"`
-    #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-
-    echo "curl EndPointIP:PORT"
-    echo "$CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/\""
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$SERVER_HOST_POD_PORT/"`
-    #process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "curl SvcName:PORT"
-    echo "$CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo -e "${BLUE}INVALID Command - Skip${NC}"
-    echo
-    #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
-    #process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-
-    echo "DEBUG - END"
-    echo
-  fi
+  echo
 
   echo "curl SvcClusterIP:NODEPORT"
-  echo "$CURL_CMD \"http://$NODEPORT_CLUSTER_IPV4:$NODEPORT_HOST_PORT/\""
+  echo "$CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$NODEPORT_HOST_PORT/\""
   echo -e "${BLUE}INVALID Command - Skip${NC}"
   echo
-  #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_CLUSTER_IPV4:$NODEPORT_HOST_PORT/"`
-  #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
 
   echo "curl EndPointIP:NODEPORT"
-  echo "$CURL_CMD \"http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/\""
-  TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_HOST_ENDPOINT_IPV4:$NODEPORT_HOST_PORT/"`
+  echo "$CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/\""
+  TMP_OUTPUT=`$CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
   echo "curl SvcName:NODEPORT"
   echo "$CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$NODEPORT_HOST_PORT/\""
-  echo -e "${BLUE}INVALID Command - Skip${NC}"
+  echo -e "${BLUE}INVALID Command SVCIP is only in cluster etwork - Skip${NC}"
   echo
-  #TMP_OUTPUT=`$CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$NODEPORT_HOST_PORT/"`
-  #process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
+ 
 fi
 
 

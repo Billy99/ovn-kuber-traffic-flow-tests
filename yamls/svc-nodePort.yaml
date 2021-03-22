@@ -8,10 +8,10 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - name: web-server-nodeport-v4-8080
+    - name: webserver-node-v4-8080
       protocol: TCP
       port: 8080
       nodePort: 30080
   selector:
-    pod-name: my-web-server-nodeport-v4
+    pod-name: my-web-server-v4
 

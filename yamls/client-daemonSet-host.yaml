@@ -2,15 +2,15 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: web-client-host
+  name: web-client-pod-host
 spec:
   selector:
     matchLabels:
-      name: web-client-host
+      name: web-client-pod-host
   template:
     metadata:
       labels:
-        name: web-client-host
+        name: web-client-pod-host
     spec:
       hostNetwork: true
       containers:

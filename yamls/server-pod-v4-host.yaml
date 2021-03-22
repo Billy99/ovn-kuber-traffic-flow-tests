@@ -18,9 +18,9 @@ data:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: web-server-host-node-v4
+  name: web-server-host-v4
   labels:
-    pod-name: my-web-server-host-node-v4
+    pod-name: my-web-server-host-v4
 spec:
   hostNetwork: true
   containers:

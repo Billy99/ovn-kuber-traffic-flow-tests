@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: server-clusterip-pod-index
+  name: server-pod-index
 data:
   index.html: |
     <!doctype html>
@@ -18,9 +18,9 @@ data:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: web-server-clusterip-v4
+  name: web-server-v4
   labels:
-    pod-name: my-web-server-clusterip-v4
+    pod-name: my-web-server-v4
 spec:
   containers:
   - name: web-server-node-v4

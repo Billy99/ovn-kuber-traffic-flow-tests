@@ -12,41 +12,34 @@ manage_labels
 
 # Delete normal Pods and Service
 if [ "$FT_NORMAL_CLIENT" == true ]; then
-  kubectl delete -f client-daemonSet.yaml
+  kubectl delete -f yamls/client-daemonSet.yaml
 fi
 if [ "$FT_SMARTNIC_CLIENT" == true ]; then
-  kubectl delete -f client-daemonSet-smartNic.yaml
+  kubectl delete -f yamls/client-daemonSet-smartNic.yaml
 fi
 
 if [ "$FT_SMARTNIC_SERVER" == true ]; then
-  kubectl delete -f server-pod-v4-smartNic.yaml
+  kubectl delete -f yamls/server-pod-v4-smartNic.yaml
 else
-  kubectl delete -f server-pod-v4.yaml
+  kubectl delete -f yamls/server-pod-v4.yaml
 fi
 
 kubectl delete -f svc-nodePort.yaml
 
 
 # Delete HOST backed Pods and Service
-kubectl delete -f client-daemonSet-host.yaml
-kubectl delete -f server-pod-v4-host.yaml
-kubectl delete -f svc-nodePort-host.yaml
+kubectl delete -f yamls/svc-nodePort-host.yaml
+kubectl delete -f yamls/svc-clusterIP-host.yaml
+kubectl delete -f yamls/server-pod-v4-host.yaml
+kubectl delete -f yamls/client-daemonSet-host.yaml
 
 
 if [ "$FT_SMARTNIC_SERVER" == true ] || [ "$FT_SMARTNIC_CLIENT" == true ]; then
-  kubectl delete -f netAttachDef-smartNic.yaml
+  kubectl delete -f yamls/netAttachDef-smartNic.yaml
 fi
 
-kubectl delete -f yamls/svc_nodePort.yaml
-kubectl delete -f yamls/svc_clusterIP.yaml
-kubectl delete -f yamls/serverPod-v4.yaml
-kubectl delete -f yamls/serverPod-nodePort-v4.yaml
-kubectl delete -f yamls/serverPod-clusterIP-v4.yaml
-kubectl delete -f yamls/clientDaemonSet.yaml
-
-kubectl delete -f yamls/clientDaemonSet-host.yaml
-kubectl delete -f yamls/serverPod-host-v4.yaml
-kubectl delete -f yamls/svc_host_nodePort.yaml
+kubectl delete -f yamls/svc-nodePort.yaml
+kubectl delete -f yamls/svc-clusterIP.yaml
 
 FT_LABEL_ACTION=delete
 manage_labels
