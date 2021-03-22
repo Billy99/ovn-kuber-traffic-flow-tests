@@ -1,0 +1,29 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: web-client-pod-smartnic
+spec:
+  selector:
+    matchLabels:
+      name: web-client-pod
+  template:
+    metadata:
+      labels:
+        name: web-client-pod
+      annotations:
+        v1.multus-cni.io/default-network: default/ftnetattach
+    spec:
+      containers:
+      - name: web-client-pod
+        image: docker.io/centos/tools:latest
+        command:
+          - /sbin/init
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            openshift.io/mlnx_bf: '1'
+          limits:
+            openshift.io/mlnx_bf: '1'
+      nodeSelector:
+        ft.ClientPod: smartnic

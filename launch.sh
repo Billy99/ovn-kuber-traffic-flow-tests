@@ -13,23 +13,26 @@ if [ "$FT_SMARTNIC_SERVER" == true ] || [ "$FT_SMARTNIC_CLIENT" == true ]; then
   kubectl create -f netAttachDef-smartNic.yaml
 fi
 
-# Create normal Pods and Service
-kubectl apply -f svc-nodePort.yaml
+# Create Cluster Networked Pods and Services
+kubectl apply -f yamls/svc-nodePort.yaml
+kubectl apply -f yamls/svc-clusterIP.yaml
 
+# Launch "smartnic" daemonset as well if node has it enabled 
 if [ "$FT_SMARTNIC_SERVER" == true ]; then
-  kubectl apply -f server-pod-v4-smartNic.yaml
+  kubectl apply -f yamls/server-pod-v4-smartNic.yaml
 else
-  kubectl apply -f server-pod-v4.yaml
+  kubectl apply -f yamls/server-pod-v4.yaml
 fi
 
 if [ "$FT_NORMAL_CLIENT" == true ]; then
-  kubectl apply -f client-daemonSet.yaml
+  kubectl apply -f yamls/client-daemonSet.yaml
 fi
 if [ "$FT_SMARTNIC_CLIENT" == true ]; then
-  kubectl apply -f client-daemonSet-smartNic.yaml
+  kubectl apply -f yamls/client-daemonSet-smartNic.yaml
 fi
 
-# Create HOST backed Pods and Service
-kubectl apply -f svc-nodePort-host.yaml
-kubectl apply -f server-pod-v4-host.yaml
-kubectl apply -f client-daemonSet-host.yaml
+# Create Host networked Pods and Services
+kubectl apply -f yamls/svc-nodePort-host.yaml
+kubectl apply -f yamls/svc-clusterIP-host.yaml
+kubectl apply -f yamls/server-pod-v4-host.yaml
+kubectl apply -f yamls/client-daemonSet-host.yaml
