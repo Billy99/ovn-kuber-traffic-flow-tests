@@ -11,7 +11,6 @@ NC='\033[0m' # No Color
 #
 
 # Test Control
-DEBUG_TEST=${DEBUG_TEST:-false}
 TEST_CASE=${TEST_CASE:-0}
 VERBOSE=${VERBOSE:-false}
 CURL_CMD=${CURL_CMD:-curl -m 5}
@@ -128,7 +127,6 @@ dump-working-data() {
   echo
   echo "Default/Override Values:"
   echo "  Test Control:"
-  echo "    DEBUG_TEST                      $DEBUG_TEST"
   echo "    TEST_CASE (0 means all)         $TEST_CASE"
   echo "    VERBOSE                         $VERBOSE"
   echo "    CURL_CMD                        $CURL_CMD"
@@ -187,9 +185,6 @@ if [ ! -z "$1" ] ; then
   if [ "$1" == help ] || [ "$1" == "--help" ] ; then
     echo
     echo "This script uses ENV Variables to control test:"
-    echo "  DEBUG_TEST                 - Run additional tests like ping or curl to port 8080"
-    echo "                               instead of NodePort. Example:"
-    echo "                                 DEBUG_TEST=true ./test.sh"
     echo "  TEST_CASE (0 means all)    - Run a single test. Example:"
     echo "                                 TEST_CASE=3 ./test.sh"
     echo "  VERBOSE                    - Command output is masked by default. Enable ping and curl"

@@ -159,7 +159,6 @@ $ ./test.sh
 
 Default/Override Values:
   Test Control:
-    DEBUG_TEST                      false
     TEST_CASE (0 means all)         0
     VERBOSE                         false
     FT_REQ_REMOTE_CLIENT_NODE       all
@@ -240,20 +239,12 @@ TEST_CASE=3 ./test.sh
 ```
 TEST_CASE=3 VERBOSE=true ./test.sh
 ```
-* If the `curl` fails, for more debugging, some of the FLOWs also have associated `ping` commands, or `curl` to port 8080 instead of the NodePort:
-```
-DEBUG_TEST=true TEST_CASE=3 VERBOSE=true ./test.sh
-```
 <br>
-
-There are a couple of sub-FLOWs that are failing and not sure if they are suppose to work or not, so there are some test-case notes for those, for example:
->	curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error
->	Should this work?
 
 Example:
 
 ```
-$ DEBUG_TEST=true TEST_CASE=3 VERBOSE=true ./test.sh
+$ TEST_CASE=3 VERBOSE=true ./test.sh
 
 :
 
@@ -261,20 +252,9 @@ FLOW 03: Pod -> NodePort Service traffic (pod/host backend)
 -----------------------------------------------------------
 
 *** 3-a: Pod -> NodePort Service traffic (pod backend - Same Node) ***
-DEBUG - BEGIN
 
-kubectl exec -it web-client-pod-76fws -- ping 10.244.0.5 -c 3
-PING 10.244.0.5 (10.244.0.5) 56(84) bytes of data.
-64 bytes from 10.244.0.5: icmp_seq=1 ttl=64 time=0.793 ms
-64 bytes from 10.244.0.5: icmp_seq=2 ttl=64 time=0.394 ms
-64 bytes from 10.244.0.5: icmp_seq=3 ttl=64 time=0.069 ms
-
---- 10.244.0.5 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2000ms
-rtt min/avg/max/mdev = 0.069/0.418/0.793/0.297 ms
-
-curl SvcClusterIP:PORT
-kubectl exec -it web-client-pod-76fws -- curl "http://10.96.204.9:8080/"
+curl SvcClusterIP:SvcPORT
+kubectl exec -it web-client-pod-fw8h4 -- curl -m 5 "http://10.96.19.205:8080/"
 <!doctype html>
 <html>
   <head>
@@ -286,6 +266,10 @@ kubectl exec -it web-client-pod-76fws -- curl "http://10.96.204.9:8080/"
 </html>
 SUCCESS
 
-
 :
 ```
+
+
+*NOTE:* There are a couple of sub-FLOWs that are failing and not sure if they are suppose to work or not, so there are some test-case notes (in blue font) for those, for example:
+> curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error
+> Should this work?
