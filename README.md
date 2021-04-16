@@ -159,9 +159,11 @@ $ ./test.sh
 
 Default/Override Values:
   Test Control:
-    DEBUG_TEST                      false
     TEST_CASE (0 means all)         0
     VERBOSE                         false
+    OVN_TRACE                       true
+    FT_NOTES                        true
+    CURL_CMD                        curl -m 5
     FT_REQ_REMOTE_CLIENT_NODE       all
   From YAML Files:
     SERVER_POD_NAME                 web-server-node-v4
@@ -169,6 +171,8 @@ Default/Override Values:
     CLIENT_POD_NAME_PREFIX          web-client-pod
     SERVER_POD_PORT                 8080
     SERVER_HOST_POD_PORT            8081
+    CLUSTERIP_SVC_NAME              web-service-clusterip-v4
+    CLUSTERIP_HOST_SVC_NAME         web-service-clusterip-host-v4
     NODEPORT_SVC_NAME               my-web-service-node-v4
     NODEPORT_HOST_SVC_NAME          my-web-service-host-node-v4
     NODEPORT_POD_PORT               30080
@@ -196,23 +200,41 @@ Queried Values:
     LOCAL_CLIENT_HOST_POD           web-client-host-fz9b5
     REMOTE_CLIENT_HOST_NODE         ovn-worker5
     REMOTE_CLIENT_HOST_POD          web-client-host-p2rbn
-    NODEPORT_HOST_CLUSTER_IPV4      10.96.193.171
-    NODEPORT_HOST_ENDPOINT_IPV4     172.18.0.8
+    CLUSTERIP_HOST_SERVICE_IPV4     10.96.193.171
+    NODEPORT_HOST_SVC_IPV4          10.96.74.153
 
 
 FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
 ----------------------------------------------------------
 
 *** 1-a: Pod to Pod (Same Node) ***
+
 kubectl exec -it web-client-pod-76fws -- curl "http://10.244.0.5:8080/"
 SUCCESS
 
+OVN-TRACE: BEGIN
+ovn-trace indicates success from web-client-pod-fw8h4 to web-server-v4 - matched on output to "default_web-server-v4"
+ovn-trace indicates success from web-server-v4 to web-client-pod-fw8h4 - matched on output to "default_web-client-pod-fw8h4"
+ovs-appctl ofproto/trace indicates success from web-client-pod-fw8h4 to web-server-v4 - matched on output:13
+
+Final flow:
+ovs-appctl ofproto/trace indicates success from web-server-v4 to web-client-pod-fw8h4 - matched on output:14
+
+Final flow:
+OVN-TRACE: END (see ovn-traces/1a-pod2pod-same-node.txt for full detail)
 
 
 *** 1-b: Pod to Pod (Different Node) ***
+
 kubectl exec -it web-client-pod-wnbvx -- curl "http://10.244.0.5:8080/"
 SUCCESS
 
+OVN-TRACE: BEGIN
+ovn-trace indicates success from web-client-pod-ccrvb to web-server-v4 - matched on output to "default_web-server-v4"
+ovn-trace indicates success from web-server-v4 to web-client-pod-ccrvb - matched on output to "default_web-client-pod-ccrvb"
+ovs-appctl ofproto/trace indicates success from web-client-pod-ccrvb to web-server-v4 - matched on -> output to kernel tunnel
+ovs-appctl ofproto/trace indicates success from web-server-v4 to web-client-pod-ccrvb - matched on -> output to kernel tunnel
+OVN-TRACE: END (see ovn-traces/1b-pod2pod-diff-node.txt for full detail)
 
 
 FLOW 02: Pod -> Cluster IP Service traffic
@@ -220,12 +242,6 @@ FLOW 02: Pod -> Cluster IP Service traffic
 
 *** 2-a: Pod -> Cluster IP Service traffic (Same Node) ***
 kubectl exec -it web-client-pod-76fws -- curl "http://10.96.204.9:8080/"
-SUCCESS
-
-
-
-*** 2-b: Pod -> Cluster IP Service traffic (Different Node) ***
-kubectl exec -it web-client-pod-wnbvx -- curl "http://10.96.204.9:8080/"
 SUCCESS
 
 :
@@ -240,52 +256,50 @@ TEST_CASE=3 ./test.sh
 ```
 TEST_CASE=3 VERBOSE=true ./test.sh
 ```
-* If the `curl` fails, for more debugging, some of the FLOWs also have associated `ping` commands, or `curl` to port 8080 instead of the NodePort:
+* `ovnkube-trace` is run on every flow by default. To disable:
 ```
-DEBUG_TEST=true TEST_CASE=3 VERBOSE=true ./test.sh
+TEST_CASE=3 OVN_TRACE=false ./test.sh
 ```
 <br>
 
-There are a couple of sub-FLOWs that are failing and not sure if they are suppose to work or not, so there are some test-case notes for those, for example:
->	curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error
->	Should this work?
 
-Example:
+*NOTE:* There are a couple of sub-FLOWs that are failing and not sure if they are suppose to work or not, so there are some test-case notes (in blue font) for those, for example:
+> curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error<br>
+> Should this work?
 
+## ovnkube-trace
+
+`ovnkube-trace` is a tool in upstream OVN-Kubernetes to trace packet simulations
+between points in ovn-kubernetes. `ovnkube-trace` is run by default on each sub-flow
+and the output is piped to files in the `ovn-traces/` directory. Below is a list of
+sample output files:
 ```
-$ DEBUG_TEST=true TEST_CASE=3 VERBOSE=true ./test.sh
-
-:
-
-FLOW 03: Pod -> NodePort Service traffic (pod/host backend)
------------------------------------------------------------
-
-*** 3-a: Pod -> NodePort Service traffic (pod backend - Same Node) ***
-DEBUG - BEGIN
-
-kubectl exec -it web-client-pod-76fws -- ping 10.244.0.5 -c 3
-PING 10.244.0.5 (10.244.0.5) 56(84) bytes of data.
-64 bytes from 10.244.0.5: icmp_seq=1 ttl=64 time=0.793 ms
-64 bytes from 10.244.0.5: icmp_seq=2 ttl=64 time=0.394 ms
-64 bytes from 10.244.0.5: icmp_seq=3 ttl=64 time=0.069 ms
-
---- 10.244.0.5 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2000ms
-rtt min/avg/max/mdev = 0.069/0.418/0.793/0.297 ms
-
-curl SvcClusterIP:PORT
-kubectl exec -it web-client-pod-76fws -- curl "http://10.96.204.9:8080/"
-<!doctype html>
-<html>
-  <head>
-    <title>Server - Pod Backend Reached</title>
-  </head>
-  <body>
-    <p>This is the Server, backed by a pod</p>
-  </body>
-</html>
-SUCCESS
-
-
-:
+$ ls -al ovn-traces/
+total 1072
+drwxrwxr-x. 2 user user  4096 Apr 16 11:58 .
+drwxrwxr-x. 5 user user   223 Apr 16 10:09 ..
+-rw-rw-r--. 1 user user 84398 Apr 16 11:57 1a-pod2pod-same-node.txt
+-rw-rw-r--. 1 user user 78030 Apr 16 11:57 1b-pod2pod-diff-node.txt
+-rw-rw-r--. 1 user user 94706 Apr 16 11:57 2a-pod2clusterIPsvc-same-node.txt
+-rw-rw-r--. 1 user user 88338 Apr 16 11:57 2b-pod2clusterIPsvc-diff-node.txt
+-rw-rw-r--. 1 user user 94673 Apr 16 11:57 3a-pod2nodePortsvc-pod-backend-same-node.txt
+-rw-rw-r--. 1 user user 88305 Apr 16 11:57 3b-pod2nodePortsvc-pod-backend-diff-node.txt
+-rw-rw-r--. 1 user user 76891 Apr 16 11:57 3c-pod2nodePortsvc-host-backend-same-node.txt
+-rw-rw-r--. 1 user user 73304 Apr 16 11:58 3d-pod2nodePortsvc-host-backend-diff-node.txt
+-rw-rw-r--. 1 user user 23623 Apr 16 11:58 4a-pod2externalHost.txt
+-rw-rw-r--. 1 user user 77620 Apr 16 11:58 5a-hostpod2clusterIPsvc-pod-backend-same-node.txt
+-rw-rw-r--. 1 user user 78151 Apr 16 11:58 5b-hostpod2clusterIPsvc-pod-backend-diff-node.txt
+-rw-rw-r--. 1 user user 77587 Apr 16 11:58 6a-hostpod2nodePortsvc-pod-backend-same-node.txt
+-rw-rw-r--. 1 user user 78118 Apr 16 11:58 6b-hostpod2nodePortsvc-pod-backend-diff-node.txt
+-rw-rw-r--. 1 user user 10841 Apr 16 11:58 7a-hostpod2clusterIPsvc-host-backend-same-node.txt
+-rw-rw-r--. 1 user user  9903 Apr 16 11:58 7b-hostpod2clusterIPsvc-host-backend-diff-node.txt
+-rw-rw-r--. 1 user user 10833 Apr 16 11:58 8a-hostpod2nodePortsvc-host-backend-same-node.txt
+-rw-rw-r--. 1 user user  9896 Apr 16 11:58 8b-hostpod2nodePortsvc-host-backend-diff-node.txt
+-rw-rw-r--. 1 user user    70 Apr 16 10:09 .gitignore
 ```
+
+Examine these files to debug why a particular flow isn't working or to better understand
+how a packet flows through OVN-Kubernetes for a particular flow.
+
+*NOTE:* The `cleanup.sh` script does not remove these files and each subsequent run of
+`test.sh` overwrites the previous test run.

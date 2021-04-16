@@ -11,9 +11,10 @@ NC='\033[0m' # No Color
 #
 
 # Test Control
-DEBUG_TEST=${DEBUG_TEST:-false}
 TEST_CASE=${TEST_CASE:-0}
 VERBOSE=${VERBOSE:-false}
+OVN_TRACE=${OVN_TRACE:-true}
+FT_NOTES=${FT_NOTES:-true}
 CURL_CMD=${CURL_CMD:-curl -m 5}
 
 # From YAML Files
@@ -128,9 +129,10 @@ dump-working-data() {
   echo
   echo "Default/Override Values:"
   echo "  Test Control:"
-  echo "    DEBUG_TEST                      $DEBUG_TEST"
   echo "    TEST_CASE (0 means all)         $TEST_CASE"
   echo "    VERBOSE                         $VERBOSE"
+  echo "    OVN_TRACE                       $OVN_TRACE"
+  echo "    FT_NOTES                        $FT_NOTES"
   echo "    CURL_CMD                        $CURL_CMD"
   echo "    FT_REQ_REMOTE_CLIENT_NODE       $FT_REQ_REMOTE_CLIENT_NODE"
   echo "  From YAML Files:"
@@ -187,14 +189,17 @@ if [ ! -z "$1" ] ; then
   if [ "$1" == help ] || [ "$1" == "--help" ] ; then
     echo
     echo "This script uses ENV Variables to control test:"
-    echo "  DEBUG_TEST                 - Run additional tests like ping or curl to port 8080"
-    echo "                               instead of NodePort. Example:"
-    echo "                                 DEBUG_TEST=true ./test.sh"
     echo "  TEST_CASE (0 means all)    - Run a single test. Example:"
     echo "                                 TEST_CASE=3 ./test.sh"
-    echo "  VERBOSE                    - Command output is masked by default. Enable ping and curl"
-    echo "                               output. Example:"
+    echo "  VERBOSE                    - Command output is masked by default. Enable curl output."
+    echo "                               Example:"
     echo "                                 VERBOSE=true ./test.sh"
+    echo "  OVN_TRACE                  - 'ovn-trace' is run on each flow by default. Disable 'ovn-trace'"
+    echo "                               Example:"
+    echo "                                 OVN_TRACE=false ./test.sh"
+    echo "  FT_NOTES                   - Print notes (in blue) where tests are failing but maybe shouldn't be."
+    echo "                               On by default. Example:"
+    echo "                                 FT_NOTES=false ./test.sh"
     echo "  CURL_CMD                   - Curl command to run. Allows additional parameters to be"
     echo "                               inserted. Example:"
     echo "                                 CURL_CMD=\"curl -v --connect-timeout 5\" ./test.sh"
@@ -224,6 +229,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
   echo
   echo "FLOW 01: Typical Pod to Pod traffic (using cluster subnet)"
   echo "----------------------------------------------------------"
+
   echo
   echo "*** 1-a: Pod to Pod (Same Node) ***"
   echo
@@ -231,11 +237,15 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
   echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$SERVER_IP:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$SERVER_IP:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-  
-  echo "*** 1-a: Pod to Pod (Same Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE $SSL_ENABLE -dst=$SERVER_POD_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2pod-same-node.txt
-  
-  echo "*** END OF TRACE (see ovn-traces/pod2pod-same-node.txt for full detail"
+
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/1a-pod2pod-same-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE $SSL_ENABLE -dst=$SERVER_POD_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
 
   echo
   echo "*** 1-b: Pod to Pod (Different Node) ***"
@@ -245,11 +255,13 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$SERVER_IP:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
 
-  echo "*** 1-b: Pod to Pod (Different Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE $SSL_ENABLE -dst=$SERVER_POD_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2pod-diff-node.txt
-  
-  echo "*** END OF TRACE (see ovn-traces/pod2pod-diff-node.txt for full detail"
-  echo
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/1b-pod2pod-diff-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE $SSL_ENABLE -dst=$SERVER_POD_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
 fi
 
 
@@ -257,6 +269,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   echo
   echo "FLOW 02: Pod -> Cluster IP Service traffic"
   echo "------------------------------------------"
+
   echo
   echo "*** 2-a: Pod -> Cluster IP Service traffic (Same Node) ***"
   echo
@@ -265,10 +278,15 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  echo "*** 2-a:  Pod -> Cluster IP Service traffic (Same Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2clusterIPsvc-same-node.txt
-  echo "*** END OF TRACE (see ovn-traces/pod2clusterIPsvc-same-node.txt for full detail"
-  
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/2a-pod2clusterIPsvc-same-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
+
   echo
   echo "*** 2-b: Pod -> Cluster IP Service traffic (Different Node) ***"
   echo
@@ -277,11 +295,13 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  echo "*** 2-b:  Pod -> Cluster IP Service traffic (Different Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2clusterIPsvc-diff-node.txt
-  
-  echo "*** END OF TRACE (see ovn-traces/pod2clusterIPsvc-diff-node.txt for full detail"
-  echo
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/2b-pod2clusterIPsvc-diff-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
 fi
 
 
@@ -309,10 +329,15 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  echo "*** 3-a: Pod -> NodePort Service traffic (pod backend - Same Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2nodePortsvc-pod-backend-same-node.txt
-  echo "*** END OF TRACE (see ovn-traces/pod2nodePortsvc-pod-backend-same-node.txt for full detail"
-  echo
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "ovnkube-trace SvcName:SvcPORT"
+    TRACE_FILENAME="ovn-traces/3a-pod2nodePortsvc-pod-backend-same-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
 
   echo
   echo "*** 3-b: Pod -> NodePort Service traffic (pod backend - Different Node) ***"
@@ -333,9 +358,15 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  echo "*** 3-b: Pod -> NodePort Service traffic (pod backend - different Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2nodePortsvc-pod-backend-diff-node.txt
-  echo "*** END OF TRACE (see ovn-traces/pod2nodePortsvc-pod-backend-diff-node.txt for full detail"
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "ovnkube-trace SvcName:SvcPORT"
+    TRACE_FILENAME="ovn-traces/3b-pod2nodePortsvc-pod-backend-diff-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
 
   echo
   echo "*** 3-c: Pod -> NodePort Service traffic (host networked pod backend - Same Node) ***"
@@ -355,12 +386,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   echo "kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-  echo
 
-   echo "*** 3-c: Pod -> NodePort Service traffic (host networked pod backend - Same Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2nodePortsvc-host-backend-same-node.txt
-  echo "*** END OF TRACE (see ovn-traces/pod2nodePortsvc-host-backend-same-node.txt for full detail"
-  echo
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "ovnkube-trace SvcName:SvcPort"
+    TRACE_FILENAME="ovn-traces/3c-pod2nodePortsvc-host-backend-same-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$LOCAL_CLIENT_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
 
   echo
   echo "*** 3-d: Pod -> NodePort Service traffic (host networked pod backend - Different Node) ***"
@@ -380,28 +415,38 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
   echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-  echo
 
-  echo "***  3-d: Pod -> NodePort Service traffic (host networked pod backend - Different Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2nodePortsvc-host-backend-diff-node.txt
-  echo "*** END OF TRACE (see ovn-traces/pod2nodePortsvc-host-backend-diff-node.txt for full detail"
-  echo
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "ovnkube-trace SvcName:SvcPort"
+    TRACE_FILENAME="ovn-traces/3d-pod2nodePortsvc-host-backend-diff-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$REMOTE_CLIENT_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
 fi
 
 if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ]; then
   echo
   echo "FLOW 04: Pod/Host Pod -> External Network (egress traffic)"
   echo "----------------------------------------------------------"
+
   echo
   echo "*** 4-a: Pod -> External Network (egress traffic) ***"
   echo
+
   echo "kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD $EXTERNAL_URL"
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_POD -- $CURL_CMD $EXTERNAL_URL`
   process-curl-output "${TMP_OUTPUT}" "${EXTERNAL_SERVER_STRING}"
   
-  echo "***  4-a: Pod -> External Network (egress traffic) TRACE ***"
-   ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE $SSL_ENABLE -src=$REMOTE_CLIENT_POD -remotehost=$EXTERNAL_SERVER_STRING -kubeconfig=$KUBECONFIG 2> ovn-traces/pod2externalHost.txt
-  echo "*** END OF TRACE (see ovn-traces/pod2externalHost.txt for full detail"
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/4a-pod2externalHost.txt"
+     ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE $SSL_ENABLE -src=$REMOTE_CLIENT_POD -remotehost=$EXTERNAL_SERVER_STRING -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
 
   echo
   echo "*** 4-b: Host Pod -> External Network (egress traffic) ***"
@@ -410,29 +455,36 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ]; then
   echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD $EXTERNAL_URL"
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD $EXTERNAL_URL`
   process-curl-output "${TMP_OUTPUT}" "${EXTERNAL_SERVER_STRING}"
-  echo
 
-  echo "***  4-b: Host Pod -> External Network (egress traffic) TRACE ***"
-   echo "No Trace, traffic is never in OVN, just exiting eth0 on host"
-  echo "*** END OF TRACE (see ovn-traces/pod2externalHost.txt for full detail"
-
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "No Trace, traffic is never in OVN, just exiting eth0 on host"
+    echo "OVN-TRACE: END"
+    echo
+  fi
 fi
 
 if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   echo
   echo "FLOW 05: Host Pod -> Cluster IP Service traffic (pod backend)"
   echo "---------------------------------------------------------"
+
   echo
   echo "*** 5-a: Host Pod -> Cluster IP Service traffic (pod backend - Same Node) ***"
-\ echo
+  echo
 
   echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  echo "***  5-a: Host Pod -> Cluster IP Service traffic (pod backend - Same Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2clusterIPsvc-pod-backend-same-node.txt
-  echo "*** END OF TRACE (see ovn-traces/pod2nodePortsvc-host-backend-diff-node.txt for full detail"
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/5a-hostpod2clusterIPsvc-pod-backend-same-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
 
   echo
   echo "*** 5-b: Host Pod -> Cluster IP Service traffic (pod backend - Different Node) ***"
@@ -442,11 +494,13 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$CLUSTERIP_SERVICE_IPV4:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  echo "***  5-b: Host Pod -> Cluster IP Service traffic (pod backend - Different Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2clusterIPsvc-pod-backend-diff-node.txt
-  echo "*** END OF TRACE (see ovn-traces/pod2nodePortsvc-host-backend-diff-node.txt for full detail"
-  
-  echo
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/5b-hostpod2clusterIPsvc-pod-backend-diff-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
 fi
 
 
@@ -454,9 +508,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
   echo
   echo "FLOW 06: Host Pod -> NodePort Service traffic (pod backend)"
   echo "-------------------------------------------------------"
+
   echo
   echo "*** 6-a: Host Pod -> NodePort Service traffic (pod backend - Same Node) ***"
   echo
+
   echo "curl SvcClusterIP:NODEPORT"
   echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/"`
@@ -469,16 +525,24 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
 
   echo "curl SvcName:NODEPORT"
   echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
-  echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error${NC}"
-  echo -e "${BLUE}Should this work? -- GOOD QUESTION${NC}"
+  if [ "$FT_NOTES" == true ]; then
+    echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error${NC}"
+    echo -e "${BLUE}Should this work? -- GOOD QUESTION${NC}"
+  fi
   kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
   
-  echo "*** 6-a: Host Pod -> NodePort Service traffic (pod backend - Same Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2nodePortsvc-pod-backend-same-node.txt
-  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-same-node.txt for full detail"
-  
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "ovnkube-trace SvcName:NODEPORT"
+    TRACE_FILENAME="ovn-traces/6a-hostpod2nodePortsvc-pod-backend-same-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
+
   echo
   echo "*** 6-b: Host Pod -> NodePort Service traffic (pod backend - Different Node) ***"
   echo
@@ -495,17 +559,22 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
 
   echo "curl SvcName:NODEPORT"
   echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/\""
-  echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error${NC}"
-  echo -e "${BLUE}Should this work?${NC}"
   #TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_SVC_NAME:$SERVER_POD_PORT/"`
   #process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
-  
-  echo "*** 6-b: Host Pod -> NodePort Service traffic (pod backend - Different Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt
-  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
-  
-  
-  echo
+  if [ "$FT_NOTES" == true ]; then
+    echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error${NC}"
+    echo -e "${BLUE}Should this work?${NC}"
+    echo
+  fi
+
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "ovnkube-trace SvcName:NODEPORT"
+    TRACE_FILENAME="ovn-traces/6b-hostpod2nodePortsvc-pod-backend-diff-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_SVC_NAME -dst-port=$SERVER_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
 fi
 
 
@@ -513,17 +582,23 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ]; then
   echo
   echo "FLOW 07: Host Pod -> Cluster IP Service traffic (host networked pod backend)"
   echo "------------------------------------------------------------------------"
+
   echo
   echo "*** 7-a: Host Pod -> Cluster IP Service traffic (host networked pod backend - Same Node) ***"
   echo
+
   echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$CLUSTERIP_HOST_SERVICE_IPV4:$SERVER_HOST_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$CLUSTERIP_HOST_SERVICE_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-  echo
 
-  echo "*** 7-a: Host Pod -> Cluster IP Service traffic (host networked pod backend - Same Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2clusterIPsvc-host-backend-same-node.txt
-  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/7a-hostpod2clusterIPsvc-host-backend-same-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+ fi
+
 
   echo
   echo "*** 7-b: Host Pod -> Cluster IP Service traffic (host networked pod backend - Different Node) ***"
@@ -532,12 +607,14 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ]; then
   echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$CLUSTERIP_HOST_SERVICE_IPV4:$SERVER_HOST_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$CLUSTERIP_HOST_SERVICE_IPV4:$SERVER_HOST_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-  echo
 
-  echo "*** 7-b: Host Pod -> Cluster IP Service traffic (host networked pod backend - Different Node) ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2clusterIPsvc-host-backend-diff-node.txt
-  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
-
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    TRACE_FILENAME="ovn-traces/7b-hostpod2clusterIPsvc-host-backend-diff-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$CLUSTERIP_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
 fi
 
 
@@ -545,9 +622,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
   echo
   echo "FLOW 08: Host Pod -> NodePort Service traffic (host networked pod backend)"
   echo "----------------------------------------------------------------------"
+
   echo
   echo "*** 8-a: Host Pod -> NodePort Service traffic (host networked pod backend - Same Node) ***"
   echo
+
   echo "curl SvcClusterIP:NODEPORT"
   echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/\""
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_IPV4:$SERVER_HOST_POD_PORT/"`
@@ -558,17 +637,27 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
   TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
-  echo "curl SvcName:NODEPORT"
-  echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
-  echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-host-node-v4; Unknown error${NC}"
-  echo -e "${BLUE}ERROR - Should this work?  -> NO the host has no idea about svc DNS resolution${NC}"
-  TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
-  process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-  echo
+  if [ "$FT_NOTES" == true ]; then
+    echo "curl SvcName:NODEPORT"
+    echo "kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
+    #TMP_OUTPUT=`kubectl exec -it $LOCAL_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
+    #process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
+    echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
+    echo
+  fi
 
-  echo "*** 8-a: Host Pod -> NodePort Service traffic (host networked pod backend - Same Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2nodePortsvc-host-backend-same-node.txt
-  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "ovnkube-trace SvcName:NODEPORT"
+    if [ "$FT_NOTES" == true ]; then
+      echo -e "${BLUE}If Test Skipped - why trace the same?${NC}"
+    fi
+    TRACE_FILENAME="ovn-traces/8a-hostpod2nodePortsvc-host-backend-same-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$LOCAL_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
+
 
   echo
   echo "*** 8-b: Host Pod -> NodePort Service traffic (host networked pod backend - Different Node) ***"
@@ -584,17 +673,26 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
   TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
-  echo "curl SvcName:NODEPORT"
-  echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
-  echo -e "${BLUE}curl: (6) Could not resolve host: my-web-service-host-node-v4; Unknown error${NC}"
-  echo -e "${BLUE}ERROR - Should this work? -> NO the host has no idea about svc DNS resolution ${NC}"
-  TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
-  process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
-  echo
+  if [ "$FT_NOTES" == true ]; then
+    echo "curl SvcName:NODEPORT"
+    echo "kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/\""
+    #TMP_OUTPUT=`kubectl exec -it $REMOTE_CLIENT_HOST_POD -- $CURL_CMD "http://$NODEPORT_HOST_SVC_NAME:$SERVER_HOST_POD_PORT/"`
+    #process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
+    echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
+    echo
+  fi
 
-  echo "*** 8-b: Host Pod -> NodePort Service traffic (host networked pod backend - Different Node) TRACE ***"
-  ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> ovn-traces/hostpod2nodePortsvc-host-backend-diff-node.txt
-  echo "*** END OF TRACE (see ovn-traces/hostpod2nodePortsvc-pod-backend-diff-node.txt for full detail"
+  if [ "$OVN_TRACE" == true ]; then 
+    echo "OVN-TRACE: BEGIN"
+    echo "ovnkube-trace SvcName:NODEPORT"
+    if [ "$FT_NOTES" == true ]; then
+      echo -e "${BLUE}If Test Skipped - why trace the same?${NC}"
+    fi
+    TRACE_FILENAME="ovn-traces/8b-hostpod2nodePortsvc-host-backend-diff-node.txt"
+    ./ovnkube-trace -loglevel=5 -tcp -ovn-config-namespace=$OVN_K_NAMESPACE  $SSL_ENABLE -service=$NODEPORT_HOST_SVC_NAME -dst-port=$SERVER_HOST_POD_PORT -src=$REMOTE_CLIENT_HOST_POD -kubeconfig=$KUBECONFIG 2> $TRACE_FILENAME
+    echo "OVN-TRACE: END (see $TRACE_FILENAME for full detail)"
+    echo
+  fi
 fi
 
 
@@ -602,43 +700,53 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ]; then
   echo
   echo "FLOW 09: External Network Traffic -> NodePort/External IP Service (ingress traffic)"
   echo "-----------------------------------------------------------------------------------"
+
   echo
   echo "*** 9-a: External Network Traffic -> NodePort/External IP Service (ingress traffic - pod backend) ***"
   echo
 
-  echo "curl SvcClusterIP:NODEPORT"
-  echo "$CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/\""
-  echo -e "${BLUE}INVALID Command SVCIP is only in cluster etwork - Skip${NC}"
-  echo
+  if [ "$FT_NOTES" == true ]; then
+    echo "curl SvcClusterIP:NODEPORT"
+    echo "$CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$SERVER_POD_PORT/\""
+    echo -e "${BLUE}Test Skipped - SVCIP is only in cluster network${NC}"
+    echo
+  fi
 
   echo "curl EndPointIP:NODEPORT"
   echo "$CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/\""
   TMP_OUTPUT=`$CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_POD_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${POD_SERVER_STRING}"
 
-  echo "curl SvcName:NODEPORT"
-  echo "$CURL_CMD \"http://$NODEPORT_SVC_NAME:$NODEPORT_POD_PORT/\""
-  echo -e "${BLUE}INVALID Command SVC HostName only resolves in cluster network - Skip${NC}"
-  echo
+  if [ "$FT_NOTES" == true ]; then
+    echo "curl SvcName:NODEPORT"
+    echo "$CURL_CMD \"http://$NODEPORT_SVC_NAME:$NODEPORT_POD_PORT/\""
+    echo -e "${BLUE}Test Skipped - SVC HostName only resolves in cluster network${NC}"
+    echo
+  fi
 
+
+  echo
   echo "*** 9-b: External Network Traffic -> NodePort/External IP Service (ingress traffic - host backend) ***"
   echo
 
-  echo "curl SvcClusterIP:NODEPORT"
-  echo "$CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$NODEPORT_HOST_PORT/\""
-  echo -e "${BLUE}INVALID Command - Skip${NC}"
-  echo
+  if [ "$FT_NOTES" == true ]; then
+    echo "curl SvcClusterIP:NODEPORT"
+    echo "$CURL_CMD \"http://$NODEPORT_SERVICE_IPV4:$NODEPORT_HOST_PORT/\""
+    echo -e "${BLUE}Test Skipped - SVCIP is only in cluster network${NC}"
+    echo
+  fi
 
   echo "curl EndPointIP:NODEPORT"
   echo "$CURL_CMD \"http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/\""
   TMP_OUTPUT=`$CURL_CMD "http://$SERVER_HOST_IP:$NODEPORT_HOST_PORT/"`
   process-curl-output "${TMP_OUTPUT}" "${HOST_SERVER_STRING}"
 
-  echo "curl SvcName:NODEPORT"
-  echo "$CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$NODEPORT_HOST_PORT/\""
-  echo -e "${BLUE}INVALID Command SVCIP is only in cluster etwork - Skip${NC}"
-  echo
- 
+  if [ "$FT_NOTES" == true ]; then
+    echo "curl SvcName:NODEPORT"
+    echo "$CURL_CMD \"http://$NODEPORT_HOST_SVC_NAME:$NODEPORT_HOST_PORT/\""
+    echo -e "${BLUE}Test Skipped - SVC HostName only resolves in cluster network${NC}"
+    echo
+  fi
 fi
 
 
@@ -646,8 +754,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 10 ]; then
   echo
   echo "FLOW 10: External network traffic -> pods (multiple external gw traffic)"
   echo "------------------------------------------------------------------------"
-  echo -e "${BLUE}NOT IMPLEMENTED${NC}"
-  echo
-fi
 
+  if [ "$FT_NOTES" == true ]; then
+    echo
+    echo -e "${BLUE}NOT IMPLEMENTED${NC}"
+    echo
+  fi
+fi
 
