@@ -10,7 +10,7 @@ FT_SMARTNIC_CLIENT=false
 manage_labels
 
 if [ "$FT_SMARTNIC_SERVER" == true ] || [ "$FT_SMARTNIC_CLIENT" == true ]; then
-  kubectl create -f netAttachDef-smartNic.yaml
+  kubectl create -f yamls/netAttachDef-smartNic.yaml
 fi
 
 # Create Cluster Networked Pods and Services

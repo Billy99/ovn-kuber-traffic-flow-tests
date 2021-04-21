@@ -24,7 +24,7 @@ else
   kubectl delete -f yamls/server-pod-v4.yaml
 fi
 
-kubectl delete -f svc-nodePort.yaml
+kubectl delete -f yamls/svc-nodePort.yaml
 
 
 # Delete HOST backed Pods and Service
