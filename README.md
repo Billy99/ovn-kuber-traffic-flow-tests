@@ -53,7 +53,7 @@ This repository contains the yaml files and test scripts to test all the traffic
 To test with upstream OVN-Kubernetes and KIND:
 ```
 cd $GOPATH/src/github.com/ovn-org/ovn-kubernetes/contrib/
-./kind.sh -ha -wk 4
+./kind.sh -ha -wk 4  -gm shared
 ```
 
 With this KIND Cluster:
@@ -248,17 +248,25 @@ SUCCESS
 ```
 
 Below are some commonly used overrides:
+
 * If a single test needs to be run (this is at the FLOW level):
 ```
 TEST_CASE=3 ./test.sh
 ```
+
 * For readability, the output of the `curl` is masked. This can be unmasked for debugging:
 ```
 TEST_CASE=3 VERBOSE=true ./test.sh
 ```
+
 * `ovnkube-trace` is run on every flow by default. To disable:
 ```
 TEST_CASE=3 OVN_TRACE=false ./test.sh
+```
+
+* To run on OCP:
+```
+SSL_ENABLE=" " OVN_K_NAMESPACE=openshift-ovn-kubernetes ./test.sh
 ```
 <br>
 

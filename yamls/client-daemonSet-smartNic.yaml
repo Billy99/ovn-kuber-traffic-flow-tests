@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: web-client-pod
-        image: docker.io/centos/tools:latest
+        image: image: registry.access.redhat.com/ubi8/ubi
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent
