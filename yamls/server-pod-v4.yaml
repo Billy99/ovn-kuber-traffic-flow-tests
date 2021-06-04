@@ -24,10 +24,11 @@ metadata:
 spec:
   containers:
   - name: web-server-node-v4
-    image: docker.io/python:3.8
+    image: registry.access.redhat.com/ubi8/python-38
     volumeMounts:
     - name: webserver-index
-      mountPath: /etc/webserver
+      mountPath: /etc/webserver/index.html
+      subPath: index.html
       readOnly: true
     command:
       - "python"
@@ -38,5 +39,5 @@ spec:
   volumes:
   - name: webserver-index
     configMap:
-      defaultMode: 0700
+      defaultMode: 0644
       name: server-pod-index

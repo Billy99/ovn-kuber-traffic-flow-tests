@@ -15,7 +15,7 @@ spec:
       hostNetwork: true
       containers:
       - name: web-client-host
-        image: docker.io/centos/tools:latest
+        image: registry.access.redhat.com/ubi8/ubi
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent
