@@ -19,9 +19,11 @@ if [ "$FT_SMARTNIC_CLIENT" == true ]; then
 fi
 
 if [ "$FT_SMARTNIC_SERVER" == true ]; then
-  kubectl delete -f yamls/server-pod-v4-smartNic.yaml
+  kubectl delete -f yamls/iperf-server-pod-v4-smartNic.yaml
+  kubectl delete -f yamls/http-server-pod-v4-smartNic.yaml
 else
-  kubectl delete -f yamls/server-pod-v4.yaml
+  kubectl delete -f yamls/iperf-server-pod-v4.yaml
+  kubectl delete -f yamls/http-server-pod-v4.yaml
 fi
 
 kubectl delete -f yamls/svc-nodePort.yaml
@@ -30,7 +32,8 @@ kubectl delete -f yamls/svc-nodePort.yaml
 # Delete HOST backed Pods and Service
 kubectl delete -f yamls/svc-nodePort-host.yaml
 kubectl delete -f yamls/svc-clusterIP-host.yaml
-kubectl delete -f yamls/server-pod-v4-host.yaml
+kubectl delete -f yamls/iperf-server-pod-v4-host.yaml
+kubectl delete -f yamls/http-server-pod-v4-host.yaml
 kubectl delete -f yamls/client-daemonSet-host.yaml
 
 

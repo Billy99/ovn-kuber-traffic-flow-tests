@@ -19,9 +19,11 @@ kubectl apply -f yamls/svc-clusterIP.yaml
 
 # Launch "smartnic" daemonset as well if node has it enabled 
 if [ "$FT_SMARTNIC_SERVER" == true ]; then
-  kubectl apply -f yamls/server-pod-v4-smartNic.yaml
+  kubectl apply -f yamls/http-server-pod-v4-smartNic.yaml
+  kubectl apply -f yamls/iperf-server-pod-v4-smartNic.yaml
 else
-  kubectl apply -f yamls/server-pod-v4.yaml
+  kubectl apply -f yamls/http-server-pod-v4.yaml
+  kubectl apply -f yamls/iperf-server-pod-v4.yaml
 fi
 
 if [ "$FT_NORMAL_CLIENT" == true ]; then
@@ -34,5 +36,6 @@ fi
 # Create Host networked Pods and Services
 kubectl apply -f yamls/svc-nodePort-host.yaml
 kubectl apply -f yamls/svc-clusterIP-host.yaml
-kubectl apply -f yamls/server-pod-v4-host.yaml
+kubectl apply -f yamls/http-server-pod-v4-host.yaml
+kubectl apply -f yamls/iperf-server-pod-v4-host.yaml
 kubectl apply -f yamls/client-daemonSet-host.yaml

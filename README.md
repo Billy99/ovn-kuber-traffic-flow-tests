@@ -11,6 +11,10 @@ This repository contains the yaml files and test scripts to test all the traffic
 	- [OVN-Kubernetes Running on OCP](#ovn-kubernetes-running-on-ocp)
 - [Test Pod Deployment](#test-pod-deployment)
 - [Test Script Usage](#test-script-usage)
+  - [curl](#curl)
+  - [iperf3](#iperf3)
+  - [ovnkube-trace](#ovnkube-trace)
+- [Container Images](#container-images)
 
 
 ## Different Traffic Flows Tested
@@ -74,13 +78,21 @@ In the SR-IOV Lab, the Nodes are as follows:
 
 Test setup is as follows, create POD backed set of resources:
 * Run pod-backed *'client'* (DaemonSet) on every node.
-* Run one instance of a pod-backed *'server'*.
-* Create a NodePort Service for the pod-backed *'server'* using NodePort 30080.
+* Run one instance of a pod-backed *'http-server'*.
+* Create a ClusterIP Service for the pod-backed *'http-server'* using NodePort 8080.
+* Create a NodePort Service for the pod-backed *'http-server'* using NodePort 30080.
+* Run one instance of a pod-backed *'iperf-server'*.
+* Create a ClusterIP Service for the pod-backed *'iperf-server'* using NodePort 5201.
+* Create a NodePort Service for the pod-backed *'iperf-server'* using NodePort 30201.
 
 Create Host-POD backed set of resources:
 * Run host-backed *'client'* (DaemonSet) on every node.
-* Run one instance of a host-backed *'server'*.
-* Create a NodePort Service for the host-backed *'server'* using NodePort 30081.
+* Run one instance of a host-backed *'http-server'*.
+* Create a ClusterIP Service for the host-backed *'http-server'* using NodePort 8081.
+* Create a NodePort Service for the host-backed *'http-server'* using NodePort 30081.
+* Run one instance of a host-backed *'iperf-server'*.
+* Create a ClusterIP Service for the host-backed *'iperf-server'* using NodePort 5202.
+* Create a NodePort Service for the host-backed *'iperf-server'* using NodePort 30202.
 
 The script finds:
 * *'client'* pod on the *'Same Node'* as the pod-backed *'server'*
@@ -89,11 +101,12 @@ The script finds:
 * *'client'* pod on a *'Different Node'* from the host-pod-backed *'server'*
 
 Once the *'client'* pods (LOCAL and REMOTE, POD and HOST) and IP addresses have been
-collected, the script runs curl commands in different combinations to test each of
+collected, the script runs *'curl'* commands in different combinations to test each of
 traffic flows.
 
 
-Create *'client'* DaemonSets, the different *'server'* instances, and the NodePort Services:
+To create all the pods and services (*'client'* DaemonSets, the different *'server'*
+instances, and the ClusterIP and NodePort Services):
 
 ```
 cd ~/src/ovn-kuber-traffic-flow-tests/
@@ -159,49 +172,75 @@ $ ./test.sh
 
 Default/Override Values:
   Test Control:
-    TEST_CASE (0 means all)         0
-    VERBOSE                         false
-    OVN_TRACE                       true
-    FT_NOTES                        true
-    CURL_CMD                        curl -m 5
-    FT_REQ_REMOTE_CLIENT_NODE       all
+    TEST_CASE (0 means all)            0
+    VERBOSE                            false
+    FT_NOTES                           true
+    CURL                               true
+    CURL_CMD                           curl -m 5
+    IPERF                              false
+    IPERF_CMD                          iperf3
+    IPERF_TIME                         10
+    OVN_TRACE                          false
+    OVN_TRACE_CMD                      ./ovnkube-trace -loglevel=5 -tcp
+    FT_REQ_REMOTE_CLIENT_NODE          all
+  OVN Trace Control:
+    OVN_K_NAMESPACE                    ovn-kubernetes
+    SSL_ENABLE                         -noSSL
   From YAML Files:
-    SERVER_POD_NAME                 web-server-node-v4
-    SERVER_HOST_POD_NAME            web-server-host-node-v4
-    CLIENT_POD_NAME_PREFIX          web-client-pod
-    SERVER_POD_PORT                 8080
-    SERVER_HOST_POD_PORT            8081
-    CLUSTERIP_SVC_NAME              web-service-clusterip-v4
-    CLUSTERIP_HOST_SVC_NAME         web-service-clusterip-host-v4
-    NODEPORT_SVC_NAME               my-web-service-node-v4
-    NODEPORT_HOST_SVC_NAME          my-web-service-host-node-v4
-    NODEPORT_POD_PORT               30080
-    NODEPORT_HOST_PORT              30081
-    POD_SERVER_STRING               Server - Pod Backend Reached
-    HOST_SERVER_STRING              Server - Host Backend Reached
-    EXTERNAL_SERVER_STRING          The document has moved
+    CLIENT_POD_NAME_PREFIX             ft-client-pod
+    http Server:
+      HTTP_SERVER_POD_NAME             ft-http-server-v4
+      HTTP_SERVER_HOST_POD_NAME        ft-http-server-host-v4
+      HTTP_SERVER_POD_PORT             8080
+      HTTP_SERVER_HOST_POD_PORT        8081
+      HTTP_CLUSTERIP_SVC_NAME          ft-http-service-clusterip-v4
+      HTTP_CLUSTERIP_HOST_SVC_NAME     ft-http-service-clusterip-host-v4
+      HTTP_NODEPORT_SVC_NAME           ft-http-service-nodeport-v4
+      HTTP_NODEPORT_HOST_SVC_NAME      ft-http-service-nodeport-host-v4
+      HTTP_NODEPORT_POD_PORT           30080
+      HTTP_NODEPORT_HOST_PORT          30081
+    iperf Server:
+      IPERF_SERVER_POD_NAME            ft-iperf-server-v4
+      IPERF_SERVER_HOST_POD_NAME       ft-iperf-server-host-v4
+      IPERF_SERVER_POD_PORT            5201
+      IPERF_SERVER_HOST_POD_PORT       5202
+      IPERF_CLUSTERIP_SVC_NAME         ft-iperf-service-clusterip-v4
+      IPERF_CLUSTERIP_HOST_SVC_NAME    ft-iperf-service-clusterip-host-v4
+      IPERF_NODEPORT_SVC_NAME          ft-iperf-service-nodeport-v4
+      IPERF_NODEPORT_HOST_SVC_NAME     ft-iperf-service-nodeport-host-v4
+      IPERF_NODEPORT_POD_PORT          30201
+      IPERF_NODEPORT_HOST_PORT         30202
+    POD_SERVER_STRING                  Server - Pod Backend Reached
+    HOST_SERVER_STRING                 Server - Host Backend Reached
+    EXTERNAL_SERVER_STRING             The document has moved
   External Access:
-    EXTERNAL_IP                     8.8.8.8
-    EXTERNAL_URL                    google.com
+    EXTERNAL_IP                        8.8.8.8
+    EXTERNAL_URL                       google.com
 Queried Values:
   Pod Backed:
-    SERVER_IP                       10.244.0.5
-    SERVER_NODE                     ovn-worker6
-    LOCAL_CLIENT_NODE               ovn-worker6
-    LOCAL_CLIENT_POD                web-client-pod-76fws
-    REMOTE_CLIENT_NODE              ovn-worker5
-    REMOTE_CLIENT_POD               web-client-pod-wnbvx
-    NODEPORT_CLUSTER_IPV4           10.96.204.9
-    NODEPORT_ENDPOINT_IPV4          10.244.0.5
+    HTTP_SERVER_IP                     10.244.2.17
+    IPERF_SERVER_IP                    10.244.2.18
+    SERVER_NODE                        ovn-worker3
+    LOCAL_CLIENT_NODE                  ovn-worker3
+    LOCAL_CLIENT_POD                   ft-client-pod-mpwnh
+    REMOTE_CLIENT_NODE                 ovn-worker4
+    REMOTE_CLIENT_POD                  ft-client-pod-kkd88
+    HTTP_CLUSTERIP_SERVICE_IPV4        10.96.244.29
+    HTTP_NODEPORT_SERVICE_IPV4         10.96.30.106
+    IPERF_CLUSTERIP_SERVICE_IPV4       10.96.43.54
+    IPERF_NODEPORT_SERVICE_IPV4        10.96.183.87
   Host backed:
-    SERVER_HOST_IP                  172.18.0.8
-    SERVER_HOST_NODE                ovn-worker6
-    LOCAL_CLIENT_HOST_NODE          ovn-worker6
-    LOCAL_CLIENT_HOST_POD           web-client-host-fz9b5
-    REMOTE_CLIENT_HOST_NODE         ovn-worker5
-    REMOTE_CLIENT_HOST_POD          web-client-host-p2rbn
-    CLUSTERIP_HOST_SERVICE_IPV4     10.96.193.171
-    NODEPORT_HOST_SVC_IPV4          10.96.74.153
+    HTTP_SERVER_HOST_IP                172.18.0.5
+    IPERF_SERVER_HOST_IP               172.18.0.5
+    SERVER_HOST_NODE                   ovn-worker3
+    LOCAL_CLIENT_HOST_NODE             ovn-worker3
+    LOCAL_CLIENT_HOST_POD              ft-client-pod-host-sfvnh
+    REMOTE_CLIENT_HOST_NODE            ovn-worker4
+    REMOTE_CLIENT_HOST_POD             ft-client-pod-host-nsp8w
+    HTTP_CLUSTERIP_HOST_SERVICE_IPV4   10.96.129.127
+    HTTP_NODEPORT_HOST_SVC_IPV4        10.96.230.138
+    IPERF_CLUSTERIP_HOST_SERVICE_IPV4  10.96.135.138
+    IPERF_NODEPORT_HOST_SVC_IPV4       10.96.60.227
 
 
 FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
@@ -209,39 +248,22 @@ FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
 
 *** 1-a: Pod to Pod (Same Node) ***
 
-kubectl exec -it web-client-pod-76fws -- curl "http://10.244.0.5:8080/"
+kubectl exec -it ft-client-pod-mpwnh -- curl -m 5 "http://10.244.2.17:8080/"
 SUCCESS
-
-OVN-TRACE: BEGIN
-ovn-trace indicates success from web-client-pod-fw8h4 to web-server-v4 - matched on output to "default_web-server-v4"
-ovn-trace indicates success from web-server-v4 to web-client-pod-fw8h4 - matched on output to "default_web-client-pod-fw8h4"
-ovs-appctl ofproto/trace indicates success from web-client-pod-fw8h4 to web-server-v4 - matched on output:13
-
-Final flow:
-ovs-appctl ofproto/trace indicates success from web-server-v4 to web-client-pod-fw8h4 - matched on output:14
-
-Final flow:
-OVN-TRACE: END (see ovn-traces/1a-pod2pod-same-node.txt for full detail)
 
 
 *** 1-b: Pod to Pod (Different Node) ***
 
-kubectl exec -it web-client-pod-wnbvx -- curl "http://10.244.0.5:8080/"
+kubectl exec -it ft-client-pod-kkd88 -- curl -m 5 "http://10.244.2.17:8080/"
 SUCCESS
-
-OVN-TRACE: BEGIN
-ovn-trace indicates success from web-client-pod-ccrvb to web-server-v4 - matched on output to "default_web-server-v4"
-ovn-trace indicates success from web-server-v4 to web-client-pod-ccrvb - matched on output to "default_web-client-pod-ccrvb"
-ovs-appctl ofproto/trace indicates success from web-client-pod-ccrvb to web-server-v4 - matched on -> output to kernel tunnel
-ovs-appctl ofproto/trace indicates success from web-server-v4 to web-client-pod-ccrvb - matched on -> output to kernel tunnel
-OVN-TRACE: END (see ovn-traces/1b-pod2pod-diff-node.txt for full detail)
 
 
 FLOW 02: Pod -> Cluster IP Service traffic
 ------------------------------------------
 
 *** 2-a: Pod -> Cluster IP Service traffic (Same Node) ***
-kubectl exec -it web-client-pod-76fws -- curl "http://10.96.204.9:8080/"
+
+kubectl exec -it ft-client-pod-mpwnh -- curl -m 5 "http://10.96.244.29:8080/"
 SUCCESS
 
 :
@@ -259,9 +281,15 @@ TEST_CASE=3 ./test.sh
 TEST_CASE=3 VERBOSE=true ./test.sh
 ```
 
-* `ovnkube-trace` is run on every flow by default. To disable:
+* `iperf3` is disabled by default. To enable and change the timeout (in seconds
+and default is 10 seconds):
 ```
-TEST_CASE=3 OVN_TRACE=false ./test.sh
+TEST_CASE=3 IPERF=true IPERF_TIME=2 ./test.sh
+```
+
+* `ovnkube-trace` is disabled by default. To enable:
+```
+TEST_CASE=3 OVN_TRACE=true ./test.sh
 ```
 
 * To run on OCP:
@@ -271,16 +299,116 @@ SSL_ENABLE=" " OVN_K_NAMESPACE=openshift-ovn-kubernetes ./test.sh
 <br>
 
 
-*NOTE:* There are a couple of sub-FLOWs that are failing and not sure if they are suppose to work or not, so there are some test-case notes (in blue font) for those, for example:
-> curl: (6) Could not resolve host: my-web-service-node-v4; Unknown error<br>
+*NOTE:* There are a couple of sub-FLOWs that are failing and not sure if they
+are suppose to work or not, so there are some test-case notes (in blue font)
+for those, for example:
+> curl: (6) Could not resolve host: http-service-node-v4; Unknown error<br>
 > Should this work?
 
-## ovnkube-trace
+### curl
+
+`curl` is used to test connectivity between pods and ensure a given flow
+is working. `curl` is enabled by default, but can be disabled using
+`CURL=false`.
+
+```
+$ TEST_CASE=1 ./test.sh
+
+:
+
+FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
+----------------------------------------------------------
+
+*** 1-a: Pod to Pod (Same Node) ***
+
+kubectl exec -it ft-client-pod-mpwnh -- curl -m 5 "http://10.244.2.17:8080/"
+SUCCESS
+
+
+*** 1-b: Pod to Pod (Different Node) ***
+
+kubectl exec -it ft-client-pod-kkd88 -- curl -m 5 "http://10.244.2.17:8080/"
+SUCCESS
+```
+
+### iperf3
+
+`iperf3` is used to test packet throughput. It can be used to determine
+the rough throughput of each flow. When enabled, `iperf3` is run and a
+summary of the results is printed.
+
+```
+$ TEST_CASE=1 IPERF=true IPERF_TIME=2 ./test.sh
+
+:
+
+FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
+----------------------------------------------------------
+
+*** 1-a: Pod to Pod (Same Node) ***
+
+kubectl exec -it ft-client-pod-mpwnh -- curl -m 5 "http://10.244.2.17:8080/"
+SUCCESS
+
+kubectl exec -it ft-client-pod-mpwnh -- iperf3 -c 10.244.2.18 -p 5201 -t 2
+Summary (see iperf-logs/1a-pod2pod-same-node.txt for full detail):
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-2.00   sec  3.03 GBytes  13.0 Gbits/sec    0             sender
+[  5]   0.00-2.03   sec  3.03 GBytes  12.8 Gbits/sec                  receiver
+SUCCESS
+
+
+*** 1-b: Pod to Pod (Different Node) ***
+
+kubectl exec -it ft-client-pod-kkd88 -- curl -m 5 "http://10.244.2.17:8080/"
+SUCCESS
+
+kubectl exec -it ft-client-pod-kkd88 -- iperf3 -c 10.244.2.18 -p 5201 -t 2
+Summary (see iperf-logs/1b-pod2pod-diff-node.txt for full detail):
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-2.00   sec  1.70 GBytes  7.29 Gbits/sec  1421             sender
+[  5]   0.00-2.04   sec  1.69 GBytes  7.13 Gbits/sec                  receiver
+SUCCESS
+```
+
+When `iperf3` is run on each sub-flow, the full output of the command is piped to
+files in the `iperf-logs/` directory. Use 'VERBOSE=true' to when command is executed
+to see full output command is run. Below is a list of sample output files:
+
+```
+$ ls -al iperf-logs/
+total 1072
+drwxrwxr-x. 2 user user  4096 Apr 16 11:58 .
+drwxrwxr-x. 5 user user   223 Apr 16 10:09 ..
+-rw-rw-r--. 1 user user 84398 Apr 16 11:57 1a-pod2pod-same-node.txt
+-rw-rw-r--. 1 user user 78030 Apr 16 11:57 1b-pod2pod-diff-node.txt
+-rw-rw-r--. 1 user user 94706 Apr 16 11:57 2a-pod2clusterIPsvc-same-node.txt
+-rw-rw-r--. 1 user user 88338 Apr 16 11:57 2b-pod2clusterIPsvc-diff-node.txt
+-rw-rw-r--. 1 user user 94673 Apr 16 11:57 3a-pod2nodePortsvc-pod-backend-same-node.txt
+-rw-rw-r--. 1 user user 88305 Apr 16 11:57 3b-pod2nodePortsvc-pod-backend-diff-node.txt
+-rw-rw-r--. 1 user user 76891 Apr 16 11:57 3c-pod2nodePortsvc-host-backend-same-node.txt
+-rw-rw-r--. 1 user user 73304 Apr 16 11:58 3d-pod2nodePortsvc-host-backend-diff-node.txt
+-rw-rw-r--. 1 user user 77620 Apr 16 11:58 5a-hostpod2clusterIPsvc-pod-backend-same-node.txt
+-rw-rw-r--. 1 user user 78151 Apr 16 11:58 5b-hostpod2clusterIPsvc-pod-backend-diff-node.txt
+-rw-rw-r--. 1 user user 77587 Apr 16 11:58 6a-hostpod2nodePortsvc-pod-backend-same-node.txt
+-rw-rw-r--. 1 user user 78118 Apr 16 11:58 6b-hostpod2nodePortsvc-pod-backend-diff-node.txt
+-rw-rw-r--. 1 user user 10841 Apr 16 11:58 7a-hostpod2clusterIPsvc-host-backend-same-node.txt
+-rw-rw-r--. 1 user user  9903 Apr 16 11:58 7b-hostpod2clusterIPsvc-host-backend-diff-node.txt
+-rw-rw-r--. 1 user user 10833 Apr 16 11:58 8a-hostpod2nodePortsvc-host-backend-same-node.txt
+-rw-rw-r--. 1 user user  9896 Apr 16 11:58 8b-hostpod2nodePortsvc-host-backend-diff-node.txt
+-rw-rw-r--. 1 user user    70 Apr 16 10:09 .gitignore
+```
+
+*NOTE:* The `cleanup.sh` script does not remove these files and each subsequent run of
+`test.sh` overwrites the previous test run.
+
+### ovnkube-trace
 
 `ovnkube-trace` is a tool in upstream OVN-Kubernetes to trace packet simulations
-between points in ovn-kubernetes. `ovnkube-trace` is run by default on each sub-flow
+between points in ovn-kubernetes. When enabled, `ovnkube-trace` is run on each sub-flow
 and the output is piped to files in the `ovn-traces/` directory. Below is a list of
 sample output files:
+
 ```
 $ ls -al ovn-traces/
 total 1072
@@ -311,3 +439,24 @@ how a packet flows through OVN-Kubernetes for a particular flow.
 
 *NOTE:* The `cleanup.sh` script does not remove these files and each subsequent run of
 `test.sh` overwrites the previous test run.
+
+## Container Images
+
+The `http-server` pods currently use `registry.access.redhat.com/ubi8/python-38` image
+to implement the http server.
+
+The `client` pods and the `iperf-server` pods are using the same image, which uses
+`docker.io/centos:8` as the base with `curl` and `iperf3` packages pulled in. The
+image has been built and pushed to `quay.io` for use by this repo.
+
+```
+quay.io/billy99/ft-base-image:0.6
+```
+
+To build the image:
+
+```
+cd ~/src/ovn-kuber-traffic-flow-tests/images/base-image/
+
+sudo podman build -t quay.io/<USER>/ft-base-image:<TAG> -f ./Dockerfile .
+```

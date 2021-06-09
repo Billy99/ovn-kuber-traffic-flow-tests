@@ -2,20 +2,20 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: web-client-pod-host
+  name: ft-client-pod-host
 spec:
   selector:
     matchLabels:
-      name: web-client-pod-host
+      name: ft-client-pod-host
   template:
     metadata:
       labels:
-        name: web-client-pod-host
+        name: ft-client-pod-host
     spec:
       hostNetwork: true
       containers:
-      - name: web-client-host
-        image: registry.access.redhat.com/ubi8/ubi
+      - name: ft-client-host
+        image: quay.io/billy99/ft-base-image:0.6
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent

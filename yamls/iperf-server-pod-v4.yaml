@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ft-iperf-server-v4
+  labels:
+    pod-name: ft-iperf-server-v4
+spec:
+  containers:
+  - name: ft-iperf-server-v4
+    image: quay.io/billy99/ft-base-image:0.6
+    command:
+      - "iperf3"
+    args: ["-s", "-p", "5201"]
+    imagePullPolicy: IfNotPresent
+  nodeSelector:
+    ft.ServerPod: server
