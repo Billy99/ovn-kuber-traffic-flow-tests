@@ -2,14 +2,29 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: web-service-clusterip-v4
+  name: ft-http-service-clusterip-v4
   labels:
-    pod-name: my-web-service-clusterip-v4
+    pod-name: ft-http-service-clusterip-v4
 spec:
   type: ClusterIP
   ports:
-    - name: web-server-clusterip-v4-8080
+    - name: ft-http-server-clusterip-v4-8080
       protocol: TCP
       port: 8080
   selector:
-    pod-name: my-web-server-v4
+    pod-name: ft-http-server-v4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ft-iperf-service-clusterip-v4
+  labels:
+    pod-name: ft-iperf-service-clusterip-v4
+spec:
+  type: ClusterIP
+  ports:
+    - name: ft-iperf-server-clusterip-v4-5201
+      protocol: TCP
+      port: 5201
+  selector:
+    pod-name: ft-iperf-server-v4

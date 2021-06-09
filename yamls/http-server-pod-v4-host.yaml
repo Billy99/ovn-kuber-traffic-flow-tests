@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ft-http-server-host-index
+data:
+  index.html: |
+    <!doctype html>
+    <html>
+      <head>
+        <title>Server - Host Backend Reached</title>
+      </head>
+      <body>
+        <p>This is the Server, backed by a host pod</p>
+      </body>
+    </html>
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ft-http-server-host-v4
+  labels:
+    pod-name: ft-http-server-host-v4
+spec:
+  hostNetwork: true
+  containers:
+  - name: ft-http-server-host-node-v4
+    image: registry.access.redhat.com/ubi8/python-38
+    volumeMounts:
+    - name: ft-http-server-index
+      mountPath: /etc/httpserver/index.html
+      subPath: index.html
+      readOnly: true
+    command:
+      - "python"
+    args: ["-m", "http.server", "8081", "--directory", "/etc/httpserver/"]
+    imagePullPolicy: IfNotPresent
+  nodeSelector:
+    ft.ServerPod: server
+  volumes:
+  - name: ft-http-server-index
+    configMap:
+      defaultMode: 0644
+      name: ft-http-server-host-index
