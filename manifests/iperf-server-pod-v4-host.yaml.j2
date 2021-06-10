@@ -8,10 +8,10 @@ spec:
   hostNetwork: true
   containers:
   - name: ft-iperf-server-host-v4
-    image: quay.io/billy99/ft-base-image:0.6
+    image: {{ test_image }}
     command:
       - "iperf3"
-    args: ["-s", "-p", "5202"]
+    args: ["-s", "-p", "{{ iperf_clusterip_host_svc_port }}"]
     imagePullPolicy: IfNotPresent
   nodeSelector:
     ft.ServerPod: server

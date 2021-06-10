@@ -10,6 +10,7 @@ This repository contains the yaml files and test scripts to test all the traffic
 	- [Upstream OVN-Kubernetes and KIND](#upstream-ovn-kubernetes-and-kind)
 	- [OVN-Kubernetes Running on OCP](#ovn-kubernetes-running-on-ocp)
 - [Test Pod Deployment](#test-pod-deployment)
+  - [Deployment Customization](#deployment-customization)
 - [Test Script Usage](#test-script-usage)
   - [curl](#curl)
   - [iperf3](#iperf3)
@@ -159,6 +160,27 @@ cd ~/src/ovn-kuber-traffic-flow-tests/
 ./cleanup.sh
 ```
 
+### Deployment Customization
+
+This repository uses `j2` to customize the YAML files used to
+deploy the Pods and Services. The following fields can be
+overridden by setting these variables (with their default values):
+
+```
+  SRIOV_RESOURCE_NAME=openshift.io/mlnx_bf
+  TEST_IMAGE=quay.io/billy99/ft-base-image:0.6
+
+  HTTP_CLUSTERIP_POD_SVC_PORT=8080
+  HTTP_CLUSTERIP_HOST_SVC_PORT=8081
+  HTTP_NODEPORT_POD_SVC_PORT=30080
+  HTTP_NODEPORT_HOST_SVC_PORT=30081
+
+  IPERF_CLUSTERIP_POD_SVC_PORT=5201
+  IPERF_CLUSTERIP_HOST_SVC_PORT=5202
+  IPERF_NODEPORT_POD_SVC_PORT=30201
+  IPERF_NODEPORT_HOST_SVC_PORT=30202
+```
+
 ## Test Script Usage
 
 To run all the tests, simply run the script.
@@ -172,14 +194,14 @@ $ ./test.sh
 
 Default/Override Values:
   Test Control:
-    TEST_CASE (0 means all)            0
+    TEST_CASE (0 means all)            1
     VERBOSE                            false
     FT_NOTES                           true
     CURL                               true
     CURL_CMD                           curl -m 5
-    IPERF                              false
+    IPERF                              true
     IPERF_CMD                          iperf3
-    IPERF_TIME                         10
+    IPERF_TIME                         2
     OVN_TRACE                          false
     OVN_TRACE_CMD                      ./ovnkube-trace -loglevel=5 -tcp
     FT_REQ_REMOTE_CLIENT_NODE          all
@@ -189,27 +211,19 @@ Default/Override Values:
   From YAML Files:
     CLIENT_POD_NAME_PREFIX             ft-client-pod
     http Server:
-      HTTP_SERVER_POD_NAME             ft-http-server-v4
+      HTTP_SERVER_POD_NAME             ft-http-server-pod-v4
       HTTP_SERVER_HOST_POD_NAME        ft-http-server-host-v4
-      HTTP_SERVER_POD_PORT             8080
-      HTTP_SERVER_HOST_POD_PORT        8081
-      HTTP_CLUSTERIP_SVC_NAME          ft-http-service-clusterip-v4
+      HTTP_CLUSTERIP_POD_SVC_NAME      ft-http-service-clusterip-pod-v4
       HTTP_CLUSTERIP_HOST_SVC_NAME     ft-http-service-clusterip-host-v4
-      HTTP_NODEPORT_SVC_NAME           ft-http-service-nodeport-v4
+      HTTP_NODEPORT_SVC_NAME           ft-http-service-nodeport-pod-v4
       HTTP_NODEPORT_HOST_SVC_NAME      ft-http-service-nodeport-host-v4
-      HTTP_NODEPORT_POD_PORT           30080
-      HTTP_NODEPORT_HOST_PORT          30081
     iperf Server:
-      IPERF_SERVER_POD_NAME            ft-iperf-server-v4
+      IPERF_SERVER_POD_NAME            ft-iperf-server-pod-v4
       IPERF_SERVER_HOST_POD_NAME       ft-iperf-server-host-v4
-      IPERF_SERVER_POD_PORT            5201
-      IPERF_SERVER_HOST_POD_PORT       5202
-      IPERF_CLUSTERIP_SVC_NAME         ft-iperf-service-clusterip-v4
+      IPERF_CLUSTERIP_POD_SVC_NAME     ft-iperf-service-clusterip-pod-v4
       IPERF_CLUSTERIP_HOST_SVC_NAME    ft-iperf-service-clusterip-host-v4
-      IPERF_NODEPORT_SVC_NAME          ft-iperf-service-nodeport-v4
+      IPERF_NODEPORT_POD_SVC_NAME      ft-iperf-service-nodeport-pod-v4
       IPERF_NODEPORT_HOST_SVC_NAME     ft-iperf-service-nodeport-host-v4
-      IPERF_NODEPORT_POD_PORT          30201
-      IPERF_NODEPORT_HOST_PORT         30202
     POD_SERVER_STRING                  Server - Pod Backend Reached
     HOST_SERVER_STRING                 Server - Host Backend Reached
     EXTERNAL_SERVER_STRING             The document has moved
@@ -218,29 +232,37 @@ Default/Override Values:
     EXTERNAL_URL                       google.com
 Queried Values:
   Pod Backed:
-    HTTP_SERVER_IP                     10.244.2.17
-    IPERF_SERVER_IP                    10.244.2.18
-    SERVER_NODE                        ovn-worker3
+    HTTP_SERVER_POD_IP                 10.244.2.29
+    IPERF_SERVER_POD_IP                10.244.2.30
+    SERVER_POD_NODE                    ovn-worker3
     LOCAL_CLIENT_NODE                  ovn-worker3
-    LOCAL_CLIENT_POD                   ft-client-pod-mpwnh
+    LOCAL_CLIENT_POD                   ft-client-pod-76qlj
     REMOTE_CLIENT_NODE                 ovn-worker4
-    REMOTE_CLIENT_POD                  ft-client-pod-kkd88
-    HTTP_CLUSTERIP_SERVICE_IPV4        10.96.244.29
-    HTTP_NODEPORT_SERVICE_IPV4         10.96.30.106
-    IPERF_CLUSTERIP_SERVICE_IPV4       10.96.43.54
-    IPERF_NODEPORT_SERVICE_IPV4        10.96.183.87
+    REMOTE_CLIENT_POD                  ft-client-pod-566xj
+    HTTP_CLUSTERIP_POD_SVC_IPV4        10.96.39.137
+    HTTP_CLUSTERIP_POD_SVC_PORT        8080
+    HTTP_NODEPORT_POD_SVC_IPV4         10.96.28.182
+    HTTP_NODEPORT_POD_SVC_PORT         30080
+    IPERF_CLUSTERIP_POD_SVC_IPV4       10.96.153.56
+    IPERF_CLUSTERIP_POD_SVC_PORT       5201
+    IPERF_NODEPORT_POD_SVC_IPV4        10.96.37.54
+    IPERF_NODEPORT_POD_SVC_PORT        30201
   Host backed:
     HTTP_SERVER_HOST_IP                172.18.0.5
     IPERF_SERVER_HOST_IP               172.18.0.5
     SERVER_HOST_NODE                   ovn-worker3
     LOCAL_CLIENT_HOST_NODE             ovn-worker3
-    LOCAL_CLIENT_HOST_POD              ft-client-pod-host-sfvnh
+    LOCAL_CLIENT_HOST_POD              ft-client-pod-host-kttz2
     REMOTE_CLIENT_HOST_NODE            ovn-worker4
-    REMOTE_CLIENT_HOST_POD             ft-client-pod-host-nsp8w
-    HTTP_CLUSTERIP_HOST_SERVICE_IPV4   10.96.129.127
-    HTTP_NODEPORT_HOST_SVC_IPV4        10.96.230.138
-    IPERF_CLUSTERIP_HOST_SERVICE_IPV4  10.96.135.138
-    IPERF_NODEPORT_HOST_SVC_IPV4       10.96.60.227
+    REMOTE_CLIENT_HOST_POD             ft-client-pod-host-hp5r2
+    HTTP_CLUSTERIP_HOST_SVC_IPV4       10.96.21.56
+    HTTP_CLUSTERIP_HOST_SVC_PORT       8081
+    HTTP_NODEPORT_HOST_SVC_IPV4        10.96.252.33
+    HTTP_NODEPORT_HOST_SVC_PORT        30081
+    IPERF_CLUSTERIP_HOST_SVC_IPV4      10.96.11.170
+    IPERF_CLUSTERIP_HOST_SVC_PORT      5202
+    IPERF_NODEPORT_HOST_SVC_IPV4       10.96.154.57
+    IPERF_NODEPORT_HOST_SVC_PORT       30202
 
 
 FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
@@ -248,13 +270,12 @@ FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
 
 *** 1-a: Pod to Pod (Same Node) ***
 
-kubectl exec -it ft-client-pod-mpwnh -- curl -m 5 "http://10.244.2.17:8080/"
+kubectl exec -it ft-client-pod-76qlj -- curl -m 5 "http://10.244.2.29:8080/"
 SUCCESS
 
 
 *** 1-b: Pod to Pod (Different Node) ***
-
-kubectl exec -it ft-client-pod-kkd88 -- curl -m 5 "http://10.244.2.17:8080/"
+kubectl exec -it ft-client-pod-566xj -- curl -m 5 "http://10.244.2.29:8080/"
 SUCCESS
 
 
@@ -263,7 +284,7 @@ FLOW 02: Pod -> Cluster IP Service traffic
 
 *** 2-a: Pod -> Cluster IP Service traffic (Same Node) ***
 
-kubectl exec -it ft-client-pod-mpwnh -- curl -m 5 "http://10.96.244.29:8080/"
+kubectl exec -it ft-client-pod-2twqq -- curl -m 5 "http://10.96.145.26:8080/"
 SUCCESS
 
 :
@@ -321,13 +342,13 @@ FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
 
 *** 1-a: Pod to Pod (Same Node) ***
 
-kubectl exec -it ft-client-pod-mpwnh -- curl -m 5 "http://10.244.2.17:8080/"
+kubectl exec -it ft-client-pod-2twqq -- curl -m 5 "http://10.244.2.26:8080/"
 SUCCESS
 
 
 *** 1-b: Pod to Pod (Different Node) ***
 
-kubectl exec -it ft-client-pod-kkd88 -- curl -m 5 "http://10.244.2.17:8080/"
+kubectl exec -it ft-client-pod-gc6dw -- curl -m 5 "http://10.244.2.26:8080/"
 SUCCESS
 ```
 
@@ -347,27 +368,27 @@ FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
 
 *** 1-a: Pod to Pod (Same Node) ***
 
-kubectl exec -it ft-client-pod-mpwnh -- curl -m 5 "http://10.244.2.17:8080/"
+kubectl exec -it ft-client-pod-2twqq -- curl -m 5 "http://10.244.2.26:8080/"
 SUCCESS
 
-kubectl exec -it ft-client-pod-mpwnh -- iperf3 -c 10.244.2.18 -p 5201 -t 2
+kubectl exec -it ft-client-pod-2twqq -- iperf3 -c 10.244.2.27 -p 5201 -t 2
 Summary (see iperf-logs/1a-pod2pod-same-node.txt for full detail):
 [ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-2.00   sec  3.03 GBytes  13.0 Gbits/sec    0             sender
-[  5]   0.00-2.03   sec  3.03 GBytes  12.8 Gbits/sec                  receiver
+[  5]   0.00-2.00   sec  3.43 GBytes  14.7 Gbits/sec  334             sender
+[  5]   0.00-2.04   sec  3.43 GBytes  14.4 Gbits/sec                  receiver
 SUCCESS
 
 
 *** 1-b: Pod to Pod (Different Node) ***
 
-kubectl exec -it ft-client-pod-kkd88 -- curl -m 5 "http://10.244.2.17:8080/"
+kubectl exec -it ft-client-pod-gc6dw -- curl -m 5 "http://10.244.2.26:8080/"
 SUCCESS
 
-kubectl exec -it ft-client-pod-kkd88 -- iperf3 -c 10.244.2.18 -p 5201 -t 2
+kubectl exec -it ft-client-pod-gc6dw -- iperf3 -c 10.244.2.27 -p 5201 -t 2
 Summary (see iperf-logs/1b-pod2pod-diff-node.txt for full detail):
 [ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-2.00   sec  1.70 GBytes  7.29 Gbits/sec  1421             sender
-[  5]   0.00-2.04   sec  1.69 GBytes  7.13 Gbits/sec                  receiver
+[  5]   0.00-2.00   sec   633 MBytes  2.65 Gbits/sec    0             sender
+[  5]   0.00-2.04   sec   632 MBytes  2.60 Gbits/sec                  receiver
 SUCCESS
 ```
 

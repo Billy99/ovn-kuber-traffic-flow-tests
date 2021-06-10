@@ -8,9 +8,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - name: ft-http-server-clusterip-v4-8081
+    - name: ft-http-server-clusterip-v4-{{ http_clusterip_host_svc_port }}
       protocol: TCP
-      port: 8081
+      port: {{ http_clusterip_host_svc_port }}
   selector:
     pod-name: ft-http-server-host-v4
 ---
@@ -23,8 +23,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - name: ft-iperf-server-clusterip-v4-5202
+    - name: ft-iperf-server-clusterip-v4-{{ iperf_clusterip_host_svc_port }}
       protocol: TCP
-      port: 5202
+      port: {{ iperf_clusterip_host_svc_port }}
   selector:
     pod-name: ft-iperf-server-host-v4

@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ft-http-service-nodeport-pod-v4
+  labels:
+    pod-name: ft-http-service-nodeport-pod-v4
+spec:
+  type: NodePort
+  ports:
+    - name: ft-http-server-node-v4-{{ http_clusterip_pod_svc_port }}
+      protocol: TCP
+      port: {{ http_clusterip_pod_svc_port }}
+      nodePort: {{ http_nodeport_pod_svc_port }}
+  selector:
+    pod-name: ft-http-server-pod-v4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ft-iperf-service-nodeport-pod-v4
+  labels:
+    pod-name: ft-iperf-service-nodeport-pod-v4
+spec:
+  type: NodePort
+  ports:
+    - name: ft-iperf-server-node-v4-{{iperf_clusterip_pod_svc_port}}
+      protocol: TCP
+      port: {{ iperf_clusterip_pod_svc_port }}
+      nodePort: {{ iperf_nodeport_pod_svc_port }}
+  selector:
+    pod-name: ft-iperf-server-pod-v4

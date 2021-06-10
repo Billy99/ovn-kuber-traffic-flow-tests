@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ft-client-pod
-        image: quay.io/billy99/ft-base-image:0.6
+        image: {{ test_image }}
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent

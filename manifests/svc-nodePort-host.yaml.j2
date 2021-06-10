@@ -8,10 +8,10 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - name: ft-http-server-host-node-v4-8081
+    - name: ft-http-server-host-node-v4-{{ http_clusterip_host_svc_port }}
       protocol: TCP
-      port: 8081
-      nodePort: 30081
+      port: {{ http_clusterip_host_svc_port }}
+      nodePort: {{ http_nodeport_host_svc_port }}
   selector:
     pod-name: ft-http-server-host-v4
 ---
@@ -24,9 +24,9 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - name: ft-iperf-server-host-node-v4-5202
+    - name: ft-iperf-server-host-node-v4-{{ iperf_clusterip_host_svc_port }}
       protocol: TCP
-      port: 5202
-      nodePort: 30202
+      port: {{ iperf_clusterip_host_svc_port }}
+      nodePort: {{ iperf_nodeport_host_svc_port }}
   selector:
     pod-name: ft-iperf-server-host-v4
