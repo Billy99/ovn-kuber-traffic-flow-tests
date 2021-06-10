@@ -16,14 +16,14 @@ spec:
     spec:
       containers:
       - name: ft-client-pod
-        image: image: quay.io/billy99/ft-base-image:0.6
+        image: image: {{ test_image }}
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent
         resources:
           requests:
-            openshift.io/mlnx_bf: '1'
+            {{ sriov_resource_name }}: '1'
           limits:
-            openshift.io/mlnx_bf: '1'
+            {{ sriov_resource_name }}: '1'
       nodeSelector:
         ft.ClientPod: smartnic

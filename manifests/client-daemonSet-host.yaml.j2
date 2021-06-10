@@ -15,7 +15,7 @@ spec:
       hostNetwork: true
       containers:
       - name: ft-client-host
-        image: quay.io/billy99/ft-base-image:0.6
+        image: {{ test_image }}
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent

@@ -1,0 +1,30 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ft-http-service-clusterip-pod-v4
+  labels:
+    pod-name: ft-http-service-clusterip-pod-v4
+spec:
+  type: ClusterIP
+  ports:
+    - name: ft-http-server-clusterip-v4-{{ http_clusterip_pod_svc_port }}
+      protocol: TCP
+      port: {{ http_clusterip_pod_svc_port }}
+  selector:
+    pod-name: ft-http-server-pod-v4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ft-iperf-service-clusterip-pod-v4
+  labels:
+    pod-name: ft-iperf-service-clusterip-pod-v4
+spec:
+  type: ClusterIP
+  ports:
+    - name: ft-iperf-server-clusterip-v4-{{ iperf_clusterip_pod_svc_port }}
+      protocol: TCP
+      port: {{ iperf_clusterip_pod_svc_port }}
+  selector:
+    pod-name: ft-iperf-server-pod-v4

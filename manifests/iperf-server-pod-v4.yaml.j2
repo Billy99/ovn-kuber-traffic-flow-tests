@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ft-iperf-server-pod-v4
+  labels:
+    pod-name: ft-iperf-server-pod-v4
+spec:
+  containers:
+  - name: ft-iperf-server-pod-v4
+    image: {{ test_image }}
+    command:
+      - "iperf3"
+    args: ["-s", "-p", "{{ iperf_clusterip_pod_svc_port }}"]
+    imagePullPolicy: IfNotPresent
+  nodeSelector:
+    ft.ServerPod: server

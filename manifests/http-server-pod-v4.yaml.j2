@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ft-http-server-pod-index-smartnic
+  name: ft-http-server-pod-index
 data:
   index.html: |
     <!doctype html>
@@ -18,14 +18,12 @@ data:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: ft-http-server-v4
-  annotations:
-    v1.multus-cni.io/default-network: default/ftnetattach
+  name: ft-http-server-pod-v4
   labels:
-    pod-name: ft-http-server-v4
+    pod-name: ft-http-server-pod-v4
 spec:
   containers:
-  - name: ft-http-server-v4
+  - name: ft-http-server-node-v4
     image: registry.access.redhat.com/ubi8/python-38
     volumeMounts:
     - name: ft-http-server-index
@@ -34,17 +32,12 @@ spec:
       readOnly: true
     command:
       - "python"
-    args: ["-m", "http.server", "8080", "--directory", "/etc/httpserver/"]
+    args: ["-m", "http.server", "{{ http_clusterip_pod_svc_port }}", "--directory", "/etc/httpserver/"]
     imagePullPolicy: IfNotPresent
-    resources:
-      requests:
-        openshift.io/mlnx_bf: '1'
-      limits:
-        openshift.io/mlnx_bf: '1'
   nodeSelector:
     ft.ServerPod: server
   volumes:
   - name: ft-http-server-index
     configMap:
       defaultMode: 0644
-      name: ft-http-server-pod-index-smartnic
+      name: ft-http-server-pod-index
