@@ -1,5 +1,17 @@
 #!/bin/bash
 
+install_j2_renderer() {
+
+  j2 -v  &>/dev/null
+
+  if [ $? != 0 ]; then
+    # ensure j2 renderer installed
+    pip install wheel --user
+    pip freeze | grep j2cli || pip install j2cli[yaml] --user
+    export PATH=~/.local/bin:$PATH
+  fi
+}
+
 generate_yamls() {
 
   #

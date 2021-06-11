@@ -33,6 +33,7 @@ else
 fi
 
 kubectl delete -f ./manifests/yamls/svc-nodePort.yaml
+kubectl delete -f ./manifests/yamls/svc-clusterIP.yaml
 
 
 # Delete HOST backed Pods and Service
@@ -46,9 +47,6 @@ kubectl delete -f ./manifests/yamls/client-daemonSet-host.yaml
 if [ "$FT_SMARTNIC_SERVER" == true ] || [ "$FT_SMARTNIC_CLIENT" == true ]; then
   kubectl delete -f ./manifests/yamls/netAttachDef-sriov.yaml
 fi
-
-kubectl delete -f ./manifests/yamls/svc-nodePort.yaml
-kubectl delete -f ./manifests/yamls/svc-clusterIP.yaml
 
 FT_LABEL_ACTION=delete
 manage_labels

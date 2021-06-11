@@ -728,11 +728,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
   if [ "$IPERF" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
-    #process-iperf
-    echo "kubectl exec -it $TEST_CLIENT_POD -- $IPERF_CMD -c $TEST_SERVER_IPERF_DST -p $TEST_SERVER_IPERF_DST_PORT -t $IPERF_TIME"
-    echo -e "${RED}iperf Skipped - HostIP:NODEPORT Different Node${NC}"
-    echo
-    echo "iperf Skipped - HostIP:NODEPORT Different Node." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+    process-iperf
   fi
 
   if [ "$OVN_TRACE" == true ]; then 
@@ -820,11 +816,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
   if [ "$IPERF" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
-    #process-iperf
-    echo "kubectl exec -it $TEST_CLIENT_POD -- $IPERF_CMD -c $TEST_SERVER_IPERF_DST -p $TEST_SERVER_IPERF_DST_PORT -t $IPERF_TIME"
-    echo -e "${RED}iperf Skipped - HostIP:NODEPORT Different Node${NC}"
-    echo
-    echo "iperf Skipped - HostIP:NODEPORT Different Node." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+    process-iperf
   fi
 
   if [ "$OVN_TRACE" == true ]; then 
@@ -1193,11 +1185,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ]; then
   if [ "$IPERF" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
-    #process-iperf
-    echo "kubectl exec -it $TEST_CLIENT_POD -- $IPERF_CMD -c $TEST_SERVER_IPERF_DST -p $TEST_SERVER_IPERF_DST_PORT -t $IPERF_TIME"
-    echo -e "${RED}iperf Skipped - HostIP:NODEPORT Different Node${NC}"
-    echo
-    echo "iperf Skipped - HostIP:NODEPORT Different Node." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+    process-iperf
   fi
 
   if [ "$OVN_TRACE" == true ]; then 
@@ -1303,11 +1291,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ]; then
   if [ "$IPERF" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
-    #process-iperf
-    echo "kubectl exec -it $TEST_CLIENT_POD -- $IPERF_CMD -c $TEST_SERVER_IPERF_DST -p $TEST_SERVER_IPERF_DST_PORT -t $IPERF_TIME"
-    echo -e "${RED}iperf Skipped - HostIP:NODEPORT Different Node${NC}"
-    echo
-    echo "iperf Skipped - HostIP:NODEPORT Different Node." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+    process-iperf
   fi
 
   if [ "$OVN_TRACE" == true ]; then 
