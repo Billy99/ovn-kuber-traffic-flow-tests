@@ -4,6 +4,10 @@
 . generate-yaml.sh
 . labels.sh
 
+#
+# Default values (possible to override)
+#
+
 SRIOV_RESOURCE_NAME=${SRIOV_RESOURCE_NAME:-openshift.io/mlnx_bf}
 TEST_IMAGE=${TEST_IMAGE:-quay.io/billy99/ft-base-image:0.6}
 

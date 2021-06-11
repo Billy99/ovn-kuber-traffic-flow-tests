@@ -10,6 +10,8 @@ This repository contains the yaml files and test scripts to test all the traffic
 	- [Upstream OVN-Kubernetes and KIND](#upstream-ovn-kubernetes-and-kind)
 	- [OVN-Kubernetes Running on OCP](#ovn-kubernetes-running-on-ocp)
 - [Test Pod Deployment](#test-pod-deployment)
+  - [Launch Test Pods](#launch-test-pods)
+  - [Cleanup Test Pods](#cleanup-test-pods)
   - [Deployment Customization](#deployment-customization)
 - [Test Script Usage](#test-script-usage)
   - [curl](#curl)
@@ -20,35 +22,54 @@ This repository contains the yaml files and test scripts to test all the traffic
 
 ## Different Traffic Flows Tested
 
-1. Typical Pod to Pods traffic (using cluster subnet)
+1. Pod to Pod traffic
    * Pod to Pod (Same Node)
    * Pod to Pod (Different Node)
-1. Pod -> Cluster IP Service traffic
-   * Pod to Cluster IP (Same Node)
-   * Pod to Cluster IP (Different Node)
-1. Pod -> NodePort Service traffic
-   * Pod -> NodePort Service traffic (pod backend - Same Node)
-   * Pod -> NodePort Service traffic (pod backend - Different Node)
-   * Pod -> NodePort Service traffic (host networked pod backend - Same Node)
-   * Pod -> NodePort Service traffic (host networked pod backend - Different Node)
-1. Pod -> External Network (egress traffic)
-1. Host -> Cluster IP Service traffic (pod backend)
-   * Host -> Cluster IP Service traffic (pod backend - Same Node)
-   * Host -> Cluster IP Service traffic (pod backend - Different Node)
-1. Host -> NodePort Service traffic (pod backend)
-   * Host -> NodePort Service traffic (pod backend - Same Node)
-   * Host -> NodePort Service traffic (pod backend - Different Node)
-1. Host -> Cluster IP Service traffic (host networked pod backend)
-   * Host -> Cluster IP Service traffic (host networked pod backend - Same Node)
-   * Host -> Cluster IP Service traffic (host networked pod backend - Different Node)
-1. Host -> NodePort Service traffic (host networked pod backend)
-   * Host -> NodePort Service traffic (host networked pod backend - Same Node)
-   * Host -> NodePort Service traffic (host networked pod backend - Different Node)
-1. External Network Traffic -> NodePort/External IP Service (ingress traffic)
-   * External Network Traffic -> NodePort/External IP Service (ingress traffic - pod backend)
-   * External Network Traffic -> NodePort/External IP Service (ingress traffic - host networked pod backend)
-1. External Network Traffic -> Pods (multiple external GW traffic)
-   * NOTE: Special Use-Case for customer
+1. Pod to Host traffic
+   * Pod to Host (Same Node)
+   * Pod to Host (Different Node)
+1. Pod -> Cluster IP Service traffic (Pod Backend)
+   * Pod to Cluster IP (Pod Backend - Same Node)
+   * Pod to Cluster IP (Pod Backend - Different Node)
+1. Pod -> Cluster IP Service traffic (Host Backend)
+   * Pod to Cluster IP (Host Backend - Same Node)
+   * Pod to Cluster IP (Host Backend - Different Node)
+1. Pod -> NodePort Service traffic (Pod Backend)
+   * Pod -> NodePort Service traffic (Pod Backend - Same Node)
+   * Pod -> NodePort Service traffic (Pod Backend - Different Node)
+1. Pod -> NodePort Service traffic (Host Backend)
+   * Pod -> NodePort Service traffic (Host Backend - Same Node)
+   * Pod -> NodePort Service traffic (Host Backend - Different Node)
+1. Host to Pod traffic
+   * Host to Pod (Same Node)
+   * Host to Pod (Different Node)
+1. Host to Host traffic
+   * Host to Host (Same Node)
+   * Host to Host (Different Node)
+1. Host -> Cluster IP Service traffic (Pod Backend)
+   * Host to Cluster IP (Pod Backend - Same Node)
+   * Host to Cluster IP (Pod Backend - Different Node)
+1. Host -> Cluster IP Service traffic (Host Backend)
+   * Host to Cluster IP (Host Backend - Same Node)
+   * Host to Cluster IP (Host Backend - Different Node)
+1. Host -> NodePort Service traffic (Pod Backend)
+   * Host -> NodePort Service traffic (Pod Backend - Same Node)
+   * Host -> NodePort Service traffic (Pod Backend - Different Node)
+1. Host -> NodePort Service traffic (Host Backend)
+   * Host -> NodePort Service traffic (Host Backend - Same Node)
+   * Host -> NodePort Service traffic (Host Backend - Different Node)
+1. Cluster -> External Network
+   * Pod -> External Network
+   * Host -> External Network
+1. External Network -> Cluster IP Service traffic
+   * External Network -> Cluster IP Service traffic (Pod Backend)
+   * External Network -> Cluster IP Service traffic (Host Backend)
+   * **NOTE:** External doesn't now about Cluster IP, so these tests are a NOOP.
+1. External Network -> NodePort Service traffic
+   * External Network -> NodePort Service traffic (Pod Backend)
+   * External Network -> NodePort Service traffic (Host Backend)
+1. External Network -> Cluster (multiple external GW traffic)
+   * **NOTE:** Special Use-Case for customer - Not Implemented
 
 
 ## Cluster Deployment
@@ -76,6 +97,8 @@ In the SR-IOV Lab, the Nodes are as follows:
 
 
 ## Test Pod Deployment
+
+### Launch Test Pods
 
 Test setup is as follows, create POD backed set of resources:
 * Run pod-backed *'client'* (DaemonSet) on every node.
@@ -151,6 +174,7 @@ export FT_REQ_REMOTE_CLIENT_NODE=ovn-worker3
 ./test.sh
 ```
 
+### Cleanup Test Pods
 
 To teardown the test setup:
 
@@ -159,6 +183,22 @@ cd ~/src/ovn-kuber-traffic-flow-tests/
 
 ./cleanup.sh
 ```
+
+Several files are generated during test runs. For example, `iper3` output files,
+`ovn-trace` output files, and Pod and Service deployment YAML files (generated
+using `j2`). All these are described more below. The files are not deleted by
+default. To delete all the generated files, use `CLEAN_ALL`.
+To teardown the test setup:
+
+```
+cd ~/src/ovn-kuber-traffic-flow-tests/
+
+CLEAN_ALL=true ./cleanup.sh
+```
+
+**NOTE:** This is especially important between updates of the repository, because
+this is still relatively new and there is still some churn on naming convention of
+everything.
 
 ### Deployment Customization
 

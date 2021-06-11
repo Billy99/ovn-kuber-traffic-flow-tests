@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#
+# Default values (possible to override)
+#
+CLEAN_ALL=${CLEAN_ALL:-false}
+
+
 # source the functions in labels.sh
 . labels.sh
 
@@ -47,4 +53,8 @@ kubectl delete -f ./manifests/yamls/svc-clusterIP.yaml
 FT_LABEL_ACTION=delete
 manage_labels
 
-rm -rf ovn-traces/*
+if [ "$CLEAN_ALL" == true ]; then
+  rm -rf manifests/yamls/*.yaml
+  rm -rf iperf-logs/*.txt
+  rm -rf ovn-traces/*.txt
+fi
