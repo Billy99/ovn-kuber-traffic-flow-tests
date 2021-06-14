@@ -433,35 +433,50 @@ SUCCESS
 ```
 
 When `iperf3` is run on each sub-flow, the full output of the command is piped to
-files in the `iperf-logs/` directory. Use 'VERBOSE=true' to when command is executed
+files in the `iperf-logs/` directory. Use `VERBOSE=true` to when command is executed
 to see full output command is run. Below is a list of sample output files:
 
 ```
-$ ls -al iperf-logs/
-total 1072
-drwxrwxr-x. 2 user user  4096 Apr 16 11:58 .
-drwxrwxr-x. 5 user user   223 Apr 16 10:09 ..
--rw-rw-r--. 1 user user 84398 Apr 16 11:57 1a-pod2pod-same-node.txt
--rw-rw-r--. 1 user user 78030 Apr 16 11:57 1b-pod2pod-diff-node.txt
--rw-rw-r--. 1 user user 94706 Apr 16 11:57 2a-pod2clusterIPsvc-same-node.txt
--rw-rw-r--. 1 user user 88338 Apr 16 11:57 2b-pod2clusterIPsvc-diff-node.txt
--rw-rw-r--. 1 user user 94673 Apr 16 11:57 3a-pod2nodePortsvc-pod-backend-same-node.txt
--rw-rw-r--. 1 user user 88305 Apr 16 11:57 3b-pod2nodePortsvc-pod-backend-diff-node.txt
--rw-rw-r--. 1 user user 76891 Apr 16 11:57 3c-pod2nodePortsvc-host-backend-same-node.txt
--rw-rw-r--. 1 user user 73304 Apr 16 11:58 3d-pod2nodePortsvc-host-backend-diff-node.txt
--rw-rw-r--. 1 user user 77620 Apr 16 11:58 5a-hostpod2clusterIPsvc-pod-backend-same-node.txt
--rw-rw-r--. 1 user user 78151 Apr 16 11:58 5b-hostpod2clusterIPsvc-pod-backend-diff-node.txt
--rw-rw-r--. 1 user user 77587 Apr 16 11:58 6a-hostpod2nodePortsvc-pod-backend-same-node.txt
--rw-rw-r--. 1 user user 78118 Apr 16 11:58 6b-hostpod2nodePortsvc-pod-backend-diff-node.txt
--rw-rw-r--. 1 user user 10841 Apr 16 11:58 7a-hostpod2clusterIPsvc-host-backend-same-node.txt
--rw-rw-r--. 1 user user  9903 Apr 16 11:58 7b-hostpod2clusterIPsvc-host-backend-diff-node.txt
--rw-rw-r--. 1 user user 10833 Apr 16 11:58 8a-hostpod2nodePortsvc-host-backend-same-node.txt
--rw-rw-r--. 1 user user  9896 Apr 16 11:58 8b-hostpod2nodePortsvc-host-backend-diff-node.txt
--rw-rw-r--. 1 user user    70 Apr 16 10:09 .gitignore
+$ ls -al iperf-logs
+total 132
+drwxrwxr-x. 2 user user 4096 Jun 10 16:46 .
+drwxrwxr-x. 7 user user 4096 Jun 11 15:04 ..
+-rw-rw-r--. 1 user user  624 Jun 10 16:51 01-a-pod2pod-sameNode.txt
+-rw-rw-r--. 1 user user  624 Jun 10 16:51 01-b-pod2pod-diffNode.txt
+-rw-rw-r--. 1 user user  622 Jun 10 16:51 02-a-pod2host-sameNode.txt
+-rw-rw-r--. 1 user user  622 Jun 10 16:51 02-b-pod2host-diffNode.txt
+-rw-rw-r--. 1 user user  624 Jun 10 16:51 03-a-pod2clusterIpSvc-podBackend-sameNode.txt
+-rw-rw-r--. 1 user user  624 Jun 10 16:51 03-b-pod2clusterIpSvc-podBackend-diffNode.txt
+-rw-rw-r--. 1 user user  628 Jun 10 16:51 04-a-pod2clusterIpSvc-hostBackend-sameNode.txt
+-rw-rw-r--. 1 user user  628 Jun 10 16:51 04-b-pod2clusterIpSvc-hostBackend-diffNode.txt
+-rw-rw-r--. 1 user user  624 Jun 10 16:51 05-a-pod2nodePortSvc-podBackend-sameNode.txt
+-rw-rw-r--. 1 user user   48 Jun 10 16:51 05-b-pod2nodePortSvc-podBackend-diffNode.txt
+-rw-rw-r--. 1 user user  624 Jun 10 16:51 06-a-pod2nodePortSvc-hostBackend-sameNode.txt
+-rw-rw-r--. 1 user user   48 Jun 10 16:51 06-b-pod2nodePortSvc-hostBackend-diffNode.txt
+-rw-rw-r--. 1 user user  623 Jun 10 16:51 07-a-host2pod-sameNode.txt
+-rw-rw-r--. 1 user user  623 Jun 10 16:51 07-b-host2pod-diffNode.txt
+-rw-rw-r--. 1 user user  621 Jun 10 16:52 08-a-host2host-sameNode.txt
+-rw-rw-r--. 1 user user  621 Jun 10 16:52 08-b-host2host-diffNode.txt
+-rw-rw-r--. 1 user user  623 Jun 10 16:52 09-a-host2clusterIpSvc-podBackend-sameNode.txt
+-rw-rw-r--. 1 user user  623 Jun 10 16:52 09-b-host2clusterIpSvc-podBackend-diffNode.txt
+-rw-rw-r--. 1 user user  627 Jun 10 16:52 10-a-host2clusterIpSvc-hostBackend-sameNode.txt
+-rw-rw-r--. 1 user user  627 Jun 10 16:52 10-b-host2clusterIpSvc-hostBackend-diffNode.txt
+-rw-rw-r--. 1 user user  623 Jun 10 16:52 11-a-host2nodePortSvc-podBackend-sameNode.txt
+-rw-rw-r--. 1 user user   48 Jun 10 16:52 11-b-host2nodePortSvc-podBackend-diffNode.txt
+-rw-rw-r--. 1 user user  623 Jun 10 16:52 12-a-host2nodePortSvc-hostBackend-sameNode.txt
+-rw-rw-r--. 1 user user   48 Jun 10 16:52 12-b-host2nodePortSvc-hostBackend-diffNode.txt
+-rw-rw-r--. 1 user user   42 Jun 10 16:52 13-a-pod2external.txt
+-rw-rw-r--. 1 user user   42 Jun 10 16:52 13-b-host2external.txt
+-rw-rw-r--. 1 user user   42 Jun 10 16:52 14-a-external2clusterIpSvc-podBackend.txt
+-rw-rw-r--. 1 user user   42 Jun 10 16:52 14-b-external2clusterIpSvc-hostBackend.txt
+-rw-rw-r--. 1 user user   42 Jun 10 16:52 15-a-external2nodePortSvc-podBackend.txt
+-rw-rw-r--. 1 user user   42 Jun 10 16:53 15-b-external2nodePortSvc-hostBackend.txt
+-rw-rw-r--. 1 user user   71 Jun  9 13:51 .gitignore
 ```
 
 *NOTE:* The `cleanup.sh` script does not remove these files and each subsequent run of
-`test.sh` overwrites the previous test run.
+`test.sh` overwrites the previous test run. They can be removed manually or using
+`CLEAN_ALL=true ./cleanup.sh`.
 
 ### ovnkube-trace
 
@@ -472,26 +487,39 @@ sample output files:
 
 ```
 $ ls -al ovn-traces/
-total 1072
-drwxrwxr-x. 2 user user  4096 Apr 16 11:58 .
-drwxrwxr-x. 5 user user   223 Apr 16 10:09 ..
--rw-rw-r--. 1 user user 84398 Apr 16 11:57 1a-pod2pod-same-node.txt
--rw-rw-r--. 1 user user 78030 Apr 16 11:57 1b-pod2pod-diff-node.txt
--rw-rw-r--. 1 user user 94706 Apr 16 11:57 2a-pod2clusterIPsvc-same-node.txt
--rw-rw-r--. 1 user user 88338 Apr 16 11:57 2b-pod2clusterIPsvc-diff-node.txt
--rw-rw-r--. 1 user user 94673 Apr 16 11:57 3a-pod2nodePortsvc-pod-backend-same-node.txt
--rw-rw-r--. 1 user user 88305 Apr 16 11:57 3b-pod2nodePortsvc-pod-backend-diff-node.txt
--rw-rw-r--. 1 user user 76891 Apr 16 11:57 3c-pod2nodePortsvc-host-backend-same-node.txt
--rw-rw-r--. 1 user user 73304 Apr 16 11:58 3d-pod2nodePortsvc-host-backend-diff-node.txt
--rw-rw-r--. 1 user user 23623 Apr 16 11:58 4a-pod2externalHost.txt
--rw-rw-r--. 1 user user 77620 Apr 16 11:58 5a-hostpod2clusterIPsvc-pod-backend-same-node.txt
--rw-rw-r--. 1 user user 78151 Apr 16 11:58 5b-hostpod2clusterIPsvc-pod-backend-diff-node.txt
--rw-rw-r--. 1 user user 77587 Apr 16 11:58 6a-hostpod2nodePortsvc-pod-backend-same-node.txt
--rw-rw-r--. 1 user user 78118 Apr 16 11:58 6b-hostpod2nodePortsvc-pod-backend-diff-node.txt
--rw-rw-r--. 1 user user 10841 Apr 16 11:58 7a-hostpod2clusterIPsvc-host-backend-same-node.txt
--rw-rw-r--. 1 user user  9903 Apr 16 11:58 7b-hostpod2clusterIPsvc-host-backend-diff-node.txt
--rw-rw-r--. 1 user user 10833 Apr 16 11:58 8a-hostpod2nodePortsvc-host-backend-same-node.txt
--rw-rw-r--. 1 user user  9896 Apr 16 11:58 8b-hostpod2nodePortsvc-host-backend-diff-node.txt
+total 556
+drwxrwxr-x. 2 user user  4096 Jun 10 16:46 .
+drwxrwxr-x. 7 user user  4096 Jun 11 15:04 ..
+-rw-rw-r--. 1 user user 17689 Jun 10 16:51 01-a-pod2pod-sameNode.txt
+-rw-rw-r--. 1 user user 18703 Jun 10 16:51 01-b-pod2pod-diffNode.txt
+-rw-rw-r--. 1 user user   196 Jun 10 16:51 02-a-pod2host-sameNode.txt
+-rw-rw-r--. 1 user user   196 Jun 10 16:51 02-b-pod2host-diffNode.txt
+-rw-rw-r--. 1 user user 26265 Jun 10 16:51 03-a-pod2clusterIpSvc-podBackend-sameNode.txt
+-rw-rw-r--. 1 user user 27279 Jun 10 16:51 03-b-pod2clusterIpSvc-podBackend-diffNode.txt
+-rw-rw-r--. 1 user user 69785 Jun 10 16:51 04-a-pod2clusterIpSvc-hostBackend-sameNode.txt
+-rw-rw-r--. 1 user user 28060 Jun 10 16:51 04-b-pod2clusterIpSvc-hostBackend-diffNode.txt
+-rw-rw-r--. 1 user user 26240 Jun 10 16:51 05-a-pod2nodePortSvc-podBackend-sameNode.txt
+-rw-rw-r--. 1 user user 27254 Jun 10 16:51 05-b-pod2nodePortSvc-podBackend-diffNode.txt
+-rw-rw-r--. 1 user user 69772 Jun 10 16:51 06-a-pod2nodePortSvc-hostBackend-sameNode.txt
+-rw-rw-r--. 1 user user 28048 Jun 10 16:51 06-b-pod2nodePortSvc-hostBackend-diffNode.txt
+-rw-rw-r--. 1 user user  4833 Jun 10 16:51 07-a-host2pod-sameNode.txt
+-rw-rw-r--. 1 user user  4833 Jun 10 16:51 07-b-host2pod-diffNode.txt
+-rw-rw-r--. 1 user user    72 Jun 10 16:52 08-a-host2host-sameNode.txt
+-rw-rw-r--. 1 user user    72 Jun 10 16:52 08-b-host2host-diffNode.txt
+-rw-rw-r--. 1 user user 13072 Jun 10 16:52 09-a-host2clusterIpSvc-podBackend-sameNode.txt
+-rw-rw-r--. 1 user user 13072 Jun 10 16:52 09-b-host2clusterIpSvc-podBackend-diffNode.txt
+-rw-rw-r--. 1 user user  8439 Jun 10 16:52 10-a-host2clusterIpSvc-hostBackend-sameNode.txt
+-rw-rw-r--. 1 user user  8439 Jun 10 16:52 10-b-host2clusterIpSvc-hostBackend-diffNode.txt
+-rw-rw-r--. 1 user user 13047 Jun 10 16:52 11-a-host2nodePortSvc-podBackend-sameNode.txt
+-rw-rw-r--. 1 user user 13047 Jun 10 16:52 11-b-host2nodePortSvc-podBackend-diffNode.txt
+-rw-rw-r--. 1 user user  8427 Jun 10 16:52 12-a-host2nodePortSvc-hostBackend-sameNode.txt
+-rw-rw-r--. 1 user user  8427 Jun 10 16:52 12-b-host2nodePortSvc-hostBackend-diffNode.txt
+-rw-rw-r--. 1 user user 25670 Jun 10 16:52 13-a-pod2external.txt
+-rw-rw-r--. 1 user user    72 Jun 10 16:52 13-b-host2external.txt
+-rw-rw-r--. 1 user user    19 Jun 10 16:52 14-a-external2clusterIpSvc-podBackend.txt
+-rw-rw-r--. 1 user user    19 Jun 10 16:52 14-b-external2clusterIpSvc-hostBackend.txt
+-rw-rw-r--. 1 user user    19 Jun 10 16:52 15-a-external2nodePortSvc-podBackend.txt
+-rw-rw-r--. 1 user user    19 Jun 10 16:53 15-b-external2nodePortSvc-hostBackend.txt
 -rw-rw-r--. 1 user user    70 Apr 16 10:09 .gitignore
 ```
 
@@ -499,7 +527,8 @@ Examine these files to debug why a particular flow isn't working or to better un
 how a packet flows through OVN-Kubernetes for a particular flow.
 
 *NOTE:* The `cleanup.sh` script does not remove these files and each subsequent run of
-`test.sh` overwrites the previous test run.
+`test.sh` overwrites the previous test run. They can be removed manually or using
+`CLEAN_ALL=true ./cleanup.sh`.
 
 ## Container Images
 
