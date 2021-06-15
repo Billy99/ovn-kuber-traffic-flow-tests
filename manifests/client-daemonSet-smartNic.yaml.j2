@@ -12,7 +12,7 @@ spec:
       labels:
         name: ft-client-pod
       annotations:
-        v1.multus-cni.io/default-network: default/ftnetattach
+        v1.multus-cni.io/default-network: default/{{ net_attach_def_name }}
     spec:
       containers:
       - name: ft-client-pod

@@ -7,7 +7,7 @@ FT_REQ_SERVER_NODE=${FT_REQ_SERVER_NODE:-all}
 
 FT_SERVER_NODE_LABEL=ft.ServerPod
 FT_CLIENT_NODE_LABEL=ft.ClientPod
-FT_SMARTNIC_LABEL=network.operator.openshift.io/external-openvswitch
+FT_SMARTNIC_LABEL=${FT_SMARTNIC_LABEL:-network.operator.openshift.io/external-openvswitch}
 
 manage_labels() {
   echo "Label Management:"
