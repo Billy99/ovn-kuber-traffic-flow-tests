@@ -224,18 +224,22 @@ overridden by setting these variables (with their default values):
 ## Test Script Usage
 
 To run all the tests, simply run the script.
-* All the hard-coded values are printed to the screen (and can be overwritten). 
+* All the hard-coded values are printed to the screen when `FT_VARS=true`.
+  The "Test Control", "OVN Trace Control" and "External Access" variables
+  can be overwritten. If any of the "From YAML Files" variables are overwritten,
+  the yaml files must also be updated before `launch.sh` is called.
 * Then all the queried values, like Pod Names and IP addresses are printed.
 * Each test is run with actual command executed printed to the screen.
 * <span style="color:green">**SUCCESS**</span> or <span style="color:red">**FAILED**</span> is then printed.
 
 ```
-$ ./test.sh
+$ FT_VARS=true ./test.sh
 
 Default/Override Values:
   Test Control:
     TEST_CASE (0 means all)            1
     VERBOSE                            false
+    FT_VARS                            true
     FT_NOTES                           true
     CURL                               true
     CURL_CMD                           curl -m 5
@@ -375,8 +379,6 @@ is working. `curl` is enabled by default, but can be disabled using
 ```
 $ TEST_CASE=1 ./test.sh
 
-:
-
 FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
 ----------------------------------------------------------
 
@@ -400,8 +402,6 @@ summary of the results is printed.
 
 ```
 $ TEST_CASE=1 IPERF=true IPERF_TIME=2 ./test.sh
-
-:
 
 FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
 ----------------------------------------------------------
