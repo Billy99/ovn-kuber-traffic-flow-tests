@@ -14,6 +14,7 @@ OVN_TRACE_LOGS_DIR="ovn-traces"
 # Test Control
 TEST_CASE=${TEST_CASE:-0}
 VERBOSE=${VERBOSE:-false}
+FT_VARS=${FT_VARS:-false}
 FT_NOTES=${FT_NOTES:-true}
 CURL=${CURL:-true}
 CURL_CMD=${CURL_CMD:-curl -m 5}
@@ -168,6 +169,7 @@ dump-working-data() {
   echo "  Test Control:"
   echo "    TEST_CASE (0 means all)            $TEST_CASE"
   echo "    VERBOSE                            $VERBOSE"
+  echo "    FT_VARS                            $FT_VARS"
   echo "    FT_NOTES                           $FT_NOTES"
   echo "    CURL                               $CURL"
   echo "    CURL_CMD                           $CURL_CMD"
@@ -360,15 +362,18 @@ process-ovn-trace() {
 if [ ! -z "$1" ] ; then
   if [ "$1" == help ] || [ "$1" == "--help" ] ; then
     echo
-    echo "This script uses ENV Variables to control test:"
+    echo "This script uses ENV Variables to control test. Here are few key ones:"
     echo "  TEST_CASE (0 means all)    - Run a single test. Example:"
     echo "                                 TEST_CASE=3 ./test.sh"
     echo "  VERBOSE                    - Command output is masked by default. Enable curl output."
     echo "                               Example:"
     echo "                                 VERBOSE=true ./test.sh"
-    echo "  OVN_TRACE                  - 'ovn-trace' is run on each flow by default. Disable 'ovn-trace'"
-    echo "                               Example:"
-    echo "                                 OVN_TRACE=false ./test.sh"
+    echo "  IPERF                      - 'iperf3' can be run on each flow, off by default. Example:"
+    echo "                                 IPERF=true ./test.sh"
+    echo "  OVN_TRACE                  - 'ovn-trace' can be run on each flow, off by deafult. Example:"
+    echo "                                 OVN_TRACE=true ./test.sh"
+    echo "  FT_VARS                    - Print script variables. Off by default. Example:"
+    echo "                                 FT_VARS=true ./test.sh"
     echo "  FT_NOTES                   - Print notes (in blue) where tests are failing but maybe shouldn't be."
     echo "                               On by default. Example:"
     echo "                                 FT_NOTES=false ./test.sh"
@@ -392,7 +397,9 @@ if [ ! -z "$1" ] ; then
   exit 0
 fi
 
-dump-working-data
+if [ "$FT_VARS" == true ]; then
+  dump-working-data
+fi
 
 #
 # Test each scenario
@@ -488,7 +495,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
 
   if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_NAME
+    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_POD_NAME
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
     TEST_SERVER_OVNTRACE_RMTHOST=
     process-ovn-trace
@@ -517,7 +524,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
 
   if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_NAME
+    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_POD_NAME
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
     TEST_SERVER_OVNTRACE_RMTHOST=
     process-ovn-trace
@@ -920,7 +927,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
 
   if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_NAME
+    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_POD_NAME
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
     TEST_SERVER_OVNTRACE_RMTHOST=
     #process-ovn-trace
@@ -956,7 +963,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
 
   if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_NAME
+    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_POD_NAME
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
     TEST_SERVER_OVNTRACE_RMTHOST=
     #process-ovn-trace
