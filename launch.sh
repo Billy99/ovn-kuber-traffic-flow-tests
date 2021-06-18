@@ -8,6 +8,7 @@
 # Default values (possible to override)
 #
 
+NET_ATTACH_DEF_NAME=${NET_ATTACH_DEF_NAME:-ftnetattach}
 SRIOV_RESOURCE_NAME=${SRIOV_RESOURCE_NAME:-openshift.io/mlnx_bf}
 TEST_IMAGE=${TEST_IMAGE:-quay.io/billy99/ft-base-image:0.6}
 
@@ -30,7 +31,7 @@ FT_SMARTNIC_CLIENT=false
 manage_labels
 
 if [ "$FT_SMARTNIC_SERVER" == true ] || [ "$FT_SMARTNIC_CLIENT" == true ]; then
-  kubectl create -f ./manifests/yamls/netAttachDef-sriov.yaml
+  kubectl apply -f ./manifests/yamls/netAttachDef-sriov.yaml
 fi
 
 # Create Cluster Networked Pods and Services

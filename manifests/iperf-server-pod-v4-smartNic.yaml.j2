@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   name: ft-iperf-server-pod-v4
   annotations:
-    v1.multus-cni.io/default-network: default/ftnetattach
+    v1.multus-cni.io/default-network: default/{{ net_attach_def_name }}
   labels:
     pod-name: ft-iperf-server-pod-v4
 spec:
