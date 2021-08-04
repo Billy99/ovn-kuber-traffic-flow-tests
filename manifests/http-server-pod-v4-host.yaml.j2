@@ -23,6 +23,7 @@ metadata:
     pod-name: ft-http-server-host-v4
 spec:
   hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
   containers:
   - name: ft-http-server-host-node-v4
     image: registry.access.redhat.com/ubi8/python-38

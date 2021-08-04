@@ -13,6 +13,7 @@ spec:
         name: ft-client-pod-host
     spec:
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: ft-client-host
         image: {{ test_image }}
