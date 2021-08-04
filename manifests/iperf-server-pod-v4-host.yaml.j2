@@ -6,6 +6,7 @@ metadata:
     pod-name: ft-iperf-server-host-v4
 spec:
   hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
   containers:
   - name: ft-iperf-server-host-v4
     image: {{ test_image }}
