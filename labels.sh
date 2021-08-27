@@ -9,12 +9,16 @@ FT_SERVER_NODE_LABEL=ft.ServerPod
 FT_CLIENT_NODE_LABEL=ft.ClientPod
 FT_SMARTNIC_LABEL=${FT_SMARTNIC_LABEL:-network.operator.openshift.io/external-openvswitch}
 
+dump_labels() {
+  echo "  Label Management:"
+  echo "    FT_LABEL_ACTION                    $FT_LABEL_ACTION"
+  echo "    FT_REQ_SERVER_NODE                 $FT_REQ_SERVER_NODE"
+  echo "    FT_SERVER_NODE_LABEL               $FT_SERVER_NODE_LABEL"
+  echo "    FT_CLIENT_NODE_LABEL               $FT_CLIENT_NODE_LABEL"
+}
+
 manage_labels() {
-  echo "Label Management:"
-  echo "  FT_LABEL_ACTION            $FT_LABEL_ACTION"
-  echo "  FT_REQ_SERVER_NODE         $FT_REQ_SERVER_NODE"
-  echo "  FT_SERVER_NODE_LABEL       $FT_SERVER_NODE_LABEL"
-  echo "  FT_CLIENT_NODE_LABEL       $FT_CLIENT_NODE_LABEL"
+  dump_labels
 
   local FOUND_SMARTNIC=false
   local FOUND_NODE=false

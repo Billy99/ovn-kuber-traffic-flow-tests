@@ -11,6 +11,10 @@ This repository contains the yaml files and test scripts to test all the traffic
 	- [OVN-Kubernetes Running on OCP](#ovn-kubernetes-running-on-ocp)
 - [Test Pod Deployment](#test-pod-deployment)
   - [Launch Test Pods](#launch-test-pods)
+     - [Pin Servers to Given Node](#pin-servers-to-given-node)
+     - [Pin Remote Client to Given Node](#pin-remote-client-to-given-node)
+     - [Limit Test to Only Host-Backed Pods](#limit-test-to-only-host-backed-pods)
+     - [Check Variable Settings](#check-variable-settings)
   - [Cleanup Test Pods](#cleanup-test-pods)
   - [Deployment Customization](#deployment-customization)
 - [Test Script Usage](#test-script-usage)
@@ -138,6 +142,8 @@ cd ~/src/ovn-kuber-traffic-flow-tests/
 ./launch.sh
 ```
 
+#### Pin Servers to Given Node
+
 Each *'server'* (pod backed and host-networked pod backed) needs to be on the same node.
 So the setup scripts use labels to achieve this. The default is to schedule the servers
 on the first worker node detected. If there is a particular node the *'server'* pods
@@ -154,6 +160,8 @@ FT_REQ_SERVER_NODE=ovn-worker4 \
 export FT_REQ_SERVER_NODE=ovn-worker4
 ./launch.sh
 ```
+
+#### Pin Remote Client to Given Node
 
 Along the same lines, the *'launch.sh'* script creates a *'client'* (pod backed and
 host-networked pod backed) on each worker node. The *'test.sh'* script sends packets from
@@ -174,6 +182,140 @@ export FT_REQ_REMOTE_CLIENT_NODE=ovn-worker3
 ./test.sh
 ```
 
+#### Limit Test to Only Host-Backed Pods
+
+There may be scenarios where only Host-Backed pods need to be tested (i.e. running pods
+directly on the DPU). This can be accomplished using the `FT_HOSTONLY` variable. It is
+best to export this variable. *'launch.sh'*, *'test.sh'* and *'cleanup.sh'* all need to
+be in sync on the value of the `FT_HOSTONLY` variable. *'test.sh'* and *'cleanup.sh'* will
+try to detect if it was used on launch, but false positives could occur if pods are renamed
+or server pod failed to come up.
+
+```
+export FT_HOSTONLY=true"
+./launch.sh
+./test.sh
+./cleanup.sh
+```
+
+#### Check Variable Settings
+
+If you can't remember all the variable names, or if they were set in a particular
+window, use the `--help` option on each script:
+
+```
+./launch.sh --help
+
+This script uses ENV Variables to control test. Here are few key ones:
+  FT_HOSTONLY                - Only host network backed pods were launched, off by default.
+                               Used on DPUs. It is best to export this variable. test.sh and
+                               cleanup.sh will try to detect if it was used on launch, but
+                               false positives could occur if pods are renamed or server pod
+                               failed to come up. Example:
+                                 export FT_HOSTONLY=true
+                                 ./launch.sh
+                                 ./test.sh
+                                 ./cleanup.sh
+  FT_REQ_SERVER_NODE         - Node to run server pods on. Must be set before launching
+                               pods. Example:
+                                 FT_REQ_SERVER_NODE=ovn-worker3 ./launch.sh
+  FT_REQ_REMOTE_CLIENT_NODE  - Node to use when sending from client pod on different node
+                               from server. Example:
+                                 FT_REQ_REMOTE_CLIENT_NODE=ovn-worker4 ./test.sh
+
+Default/Override Values:
+  Launch Control:
+    FT_HOSTONLY                        false
+    FT_REQ_SERVER_NODE                 all
+    FT_REQ_REMOTE_CLIENT_NODE          
+  From YAML Files:
+    NET_ATTACH_DEF_NAME                ftnetattach
+    SRIOV_RESOURCE_NAME                openshift.io/mlnx_bf
+    TEST_IMAGE                         quay.io/billy99/ft-base-image:0.6
+    HTTP_CLUSTERIP_POD_SVC_PORT        8080
+    HTTP_CLUSTERIP_HOST_SVC_PORT       8081
+    HTTP_NODEPORT_POD_SVC_PORT         30080
+    HTTP_NODEPORT_HOST_SVC_PORT        30081
+    IPERF_CLUSTERIP_POD_SVC_PORT       5201
+    IPERF_CLUSTERIP_HOST_SVC_PORT      5202
+    IPERF_NODEPORT_POD_SVC_PORT        30201
+    IPERF_NODEPORT_HOST_SVC_PORT       30202
+  Label Management:
+    FT_LABEL_ACTION                    
+    FT_REQ_SERVER_NODE                 all
+    FT_SERVER_NODE_LABEL               ft.ServerPod
+    FT_CLIENT_NODE_LABEL               ft.ClientPod
+```
+
+```
+./test.sh --help
+
+
+This script uses ENV Variables to control test. Here are few key ones:
+  TEST_CASE (0 means all)    - Run a single test. Example:
+                                 TEST_CASE=3 ./test.sh
+  VERBOSE                    - Command output is masked by default. Enable curl output.
+                               Example:
+                                 VERBOSE=true ./test.sh
+  IPERF                      - 'iperf3' can be run on each flow, off by default. Example:
+                                 IPERF=true ./test.sh
+  OVN_TRACE                  - 'ovn-trace' can be run on each flow, off by deafult. Example:
+                                 OVN_TRACE=true ./test.sh
+  FT_VARS                    - Print script variables. Off by default. Example:
+                                 FT_VARS=true ./test.sh
+  FT_NOTES                   - Print notes (in blue) where tests are failing but maybe shouldn't be.
+                               On by default. Example:
+                                 FT_NOTES=false ./test.sh
+  CURL_CMD                   - Curl command to run. Allows additional parameters to be
+                               inserted. Example:
+                                 CURL_CMD="curl -v --connect-timeout 5" ./test.sh
+  FT_REQ_REMOTE_CLIENT_NODE  - Node to use when sending from client pod on different node
+                               from server. Example:
+                                 FT_REQ_REMOTE_CLIENT_NODE=ovn-worker4 ./test.sh
+  FT_REQ_SERVER_NODE         - Node to run server pods on. Must be set before launching
+                               pods. Example:
+                                 FT_REQ_SERVER_NODE=ovn-worker3 ./launch.sh
+
+Default/Override Values:
+  Test Control:
+    TEST_CASE (0 means all)            0
+    VERBOSE                            false
+    FT_VARS                            false
+    FT_NOTES                           true
+:
+```
+
+```
+./cleanup.sh --help
+
+This script uses ENV Variables to control test. Here are few key ones:
+  FT_HOSTONLY                - Only host network backed pods were launched, off by default.
+                               Used on DPUs. It is best to export this variable. test.sh and
+                               cleanup.sh will try to detect if it was used on launch, but
+                               false positives could occur if pods are renamed or server pod
+                               failed to come up. Example:
+                                 export FT_HOSTONLY=true
+                                 ./launch.sh
+                                 ./test.sh
+                                 ./cleanup.sh
+  CLEAN_ALL                  - Remove all generated files (yamls from j2, iperf logs, and
+                               ovn-trace logs). Default is to leave in place. Example:
+                                 CLEAN_ALL=true ./cleanup.sh
+
+Default/Override Values:
+  Launch Control:
+    FT_HOSTONLY                        false
+    HTTP_SERVER_POD_NAME               ft-http-server-pod-v4
+    CLEAN_ALL                          false
+    FT_REQ_SERVER_NODE                 all
+    FT_REQ_REMOTE_CLIENT_NODE          
+  Label Management:
+    FT_LABEL_ACTION                    
+    FT_REQ_SERVER_NODE                 all
+    FT_SERVER_NODE_LABEL               ft.ServerPod
+    FT_CLIENT_NODE_LABEL               ft.ClientPod
+```
+  
 ### Cleanup Test Pods
 
 To teardown the test setup:
@@ -357,18 +499,24 @@ TEST_CASE=3 IPERF=true IPERF_TIME=2 ./test.sh
 TEST_CASE=3 OVN_TRACE=true ./test.sh
 ```
 
-* To run on OCP:
+* To run on `ovnkube-trace` on OCP:
 ```
-SSL_ENABLE=" " OVN_K_NAMESPACE=openshift-ovn-kubernetes ./test.sh
+TEST_CASE=3 OVN_TRACE=true SSL_ENABLE=" " OVN_K_NAMESPACE=openshift-ovn-kubernetes ./test.sh
 ```
-<br>
 
+* There are a couple of sub-FLOWs that are skipped because they are not
+applicable, like External to Service ClusterIP. So there are some test-case
+notes (in blue font) for those, for example:
+> *** 14-a: External Network -> Cluster IP Service traffic (Pod Backend) ***
+>
+> curl SvcClusterIP:NODEPORT
+> curl -m 5 "http://10.96.238.242:8080/"
+> Test Skipped - SVCIP is only in cluster network
 
-*NOTE:* There are a couple of sub-FLOWs that are failing and not sure if they
-are suppose to work or not, so there are some test-case notes (in blue font)
-for those, for example:
-> curl: (6) Could not resolve host: http-service-node-v4; Unknown error<br>
-> Should this work?
+To turn off all the test comments:
+```
+FT_NOTES=false ./test.sh
+```
 
 ### curl
 
