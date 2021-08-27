@@ -23,6 +23,7 @@ IPERF_CMD=${IPERF_CMD:-iperf3}
 IPERF_TIME=${IPERF_TIME:-10}
 OVN_TRACE=${OVN_TRACE:-false}
 OVN_TRACE_CMD=${OVN_TRACE_CMD:-./ovnkube-trace -loglevel=5 -tcp}
+FT_HOSTONLY=${FT_HOSTONLY:-unknown}
 
 # From YAML Files
 CLIENT_POD_NAME_PREFIX=${CLIENT_POD_NAME_PREFIX:-ft-client-pod}
@@ -63,7 +64,8 @@ SSL_ENABLE=${SSL_ENABLE:-"-noSSL"}
 #
 # Query for dynamic data
 #
-SERVER_POD_NODE=`kubectl get pods -o wide | grep $HTTP_SERVER_POD_NAME  | awk -F' ' '{print $7}'`
+SERVER_POD_NODE=`kubectl get pods -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $7}'`
+
 HTTP_SERVER_POD_IP=`kubectl get pods -o wide | grep $HTTP_SERVER_POD_NAME  | awk -F' ' '{print $6}'`
 HTTP_SERVER_HOST_IP=`kubectl get pods -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
 IPERF_SERVER_POD_IP=`kubectl get pods -o wide | grep $IPERF_SERVER_POD_NAME  | awk -F' ' '{print $6}'`
@@ -99,8 +101,25 @@ fi
 # POD Values
 #
 
-LOCAL_CLIENT_POD=`kubectl get pods --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
-REMOTE_CLIENT_POD=`kubectl get pods --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide| grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
+if [ "$FT_HOSTONLY" == unknown ]; then
+  if [ -z "${HTTP_SERVER_POD_IP}" ]; then
+    FT_HOSTONLY=true
+  else
+    FT_HOSTONLY=false
+  fi
+fi
+
+
+if [ "$FT_HOSTONLY" == false ]; then
+  LOCAL_CLIENT_POD=`kubectl get pods --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
+  REMOTE_CLIENT_POD=`kubectl get pods --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide| grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
+else
+  LOCAL_CLIENT_POD=
+  REMOTE_CLIENT_POD=
+fi
+
+LOCAL_CLIENT_HOST_POD=`kubectl get pods --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
+REMOTE_CLIENT_HOST_POD=`kubectl get pods --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
 
 HTTP_CLUSTERIP_POD_SVC_IPV4=`kubectl get services | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'`
 HTTP_CLUSTERIP_POD_SVC_PORT=`kubectl get services | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
@@ -125,12 +144,6 @@ IPERF_NODEPORT_POD_SVC_PORT=`kubectl get services | grep $IPERF_NODEPORT_POD_SVC
 
 IPERF_NODEPORT_HOST_SVC_IPV4=`kubectl get services | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
 IPERF_NODEPORT_HOST_SVC_PORT=`kubectl get services | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
-
-# HOST POD Values
-
-LOCAL_CLIENT_HOST_POD=`kubectl get pods --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
-REMOTE_CLIENT_HOST_POD=`kubectl get pods --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
-
 
 
 # NOTE: env in the container has values that could be used instead of using the above commands:
@@ -171,6 +184,7 @@ dump-working-data() {
   echo "    VERBOSE                            $VERBOSE"
   echo "    FT_VARS                            $FT_VARS"
   echo "    FT_NOTES                           $FT_NOTES"
+  echo "    FT_HOSTONLY                        $FT_HOSTONLY"
   echo "    CURL                               $CURL"
   echo "    CURL_CMD                           $CURL_CMD"
   echo "    IPERF                              $IPERF"
@@ -404,7 +418,7 @@ fi
 #
 # Test each scenario
 #
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 01: Pod to Pod traffic"
   echo "---------------------------"
@@ -468,7 +482,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ]; then
 fi
 
 
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 02: Pod to Host traffic"
   echo "----------------------------"
@@ -532,7 +546,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ]; then
 fi
 
 
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 03: Pod -> Cluster IP Service traffic (Pod Backend)"
   echo "--------------------------------------------------------"
@@ -596,7 +610,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ]; then
 fi
 
 
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 04: Pod -> Cluster IP Service traffic (Host Backend)"
   echo "--------------------------------------------------------"
@@ -660,7 +674,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ]; then
 fi
 
 
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 05: Pod -> NodePort Service traffic (Pod Backend)"
   echo "------------------------------------------------------"
@@ -748,7 +762,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ]; then
 fi
 
 
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 06: Pod -> NodePort Service traffic (Host Backend)"
   echo "-------------------------------------------------------"
@@ -836,7 +850,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ]; then
 fi
 
 
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 07: Host to Pod traffic"
   echo "----------------------------"
@@ -902,8 +916,8 @@ fi
 
 if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
   echo
-  echo "FLOW 08: Pod to Host traffic"
-  echo "----------------------------"
+  echo "FLOW 08: Host to Host traffic"
+  echo "-----------------------------"
 
   echo
   echo "*** 8-a: Host to Host (Same Node) ***"
@@ -978,7 +992,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ]; then
 fi
 
 
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 09: Host -> Cluster IP Service traffic (Pod Backend)"
   echo "---------------------------------------------------------"
@@ -1106,7 +1120,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 10 ]; then
 fi
 
 
-if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ]; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ] && [ "$FT_HOSTONLY" == false ]; then
   echo
   echo "FLOW 11: Host Pod -> NodePort Service traffic (Pod Backend)"
   echo "-----------------------------------------------------------"
@@ -1134,11 +1148,11 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ]; then
     TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_SVC_NAME
     TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
     echo "curl SvcName:NODEPORT"
-    if [ "$FT_NOTES" == true ]; then
-      echo -e "${BLUE}curl: (6) Could not resolve host: ft-http-service-node-v4; Unknown error${NC}"
-      echo -e "${BLUE}Should this work? -- GOOD QUESTION${NC}"
-    fi
     process-curl
+    #if [ "$FT_NOTES" == true ]; then
+    #  echo -e "${BLUE}curl: (6) Could not resolve host: ft-http-service-node-v4; Unknown error${NC}"
+    #  echo -e "${BLUE}Should this work? -- GOOD QUESTION${NC}"
+    #fi
   fi
 
   if [ "$IPERF" == true ]; then
@@ -1180,13 +1194,13 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ]; then
     TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
     echo "curl SvcName:NODEPORT"
     process-curl
-    if [ "$FT_NOTES" == true ]; then
-      echo "curl SvcName:NODEPORT"
-      echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-      echo -e "${BLUE}curl: (6) Could not resolve host: ft-http-service-node-v4; Unknown error${NC}"
-      echo -e "${BLUE}Should this work?${NC}"
-      echo
-    fi
+    #if [ "$FT_NOTES" == true ]; then
+    #  echo "curl SvcName:NODEPORT"
+    #  echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+    #  echo -e "${BLUE}curl: (6) Could not resolve host: ft-http-service-node-v4; Unknown error${NC}"
+    #  echo -e "${BLUE}Should this work?${NC}"
+    #  echo
+    #fi
   fi
 
   if [ "$IPERF" == true ]; then
@@ -1234,12 +1248,12 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ]; then
     TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
     echo "curl SvcName:NODEPORT"
     process-curl
-    if [ "$FT_NOTES" == true ]; then
-      echo "curl SvcName:NODEPORT"
-      echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-      echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
-      echo
-    fi
+    #if [ "$FT_NOTES" == true ]; then
+    #  echo "curl SvcName:NODEPORT"
+    #  echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+    #  echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
+    #  echo
+    #fi
   fi
 
   if [ "$IPERF" == true ]; then
@@ -1287,12 +1301,12 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ]; then
     TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
     echo "curl SvcName:NODEPORT"
     process-curl
-    if [ "$FT_NOTES" == true ]; then
-      echo "curl SvcName:NODEPORT"
-      echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-      echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
-      echo
-    fi
+    #if [ "$FT_NOTES" == true ]; then
+    #  echo "curl SvcName:NODEPORT"
+    #  echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+    #  echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
+    #  echo
+    #fi
   fi
 
   if [ "$IPERF" == true ]; then
@@ -1324,36 +1338,37 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 13 ]; then
   echo "FLOW 13: Cluster -> External Network"
   echo "------------------------------------"
 
-  echo
-  echo "*** 13-a: Pod -> External Network ***"
-  echo
+  if [ "$FT_HOSTONLY" == false ]; then
+    echo
+    echo "*** 13-a: Pod -> External Network ***"
+    echo
   
-  TEST_CLIENT_POD=$REMOTE_CLIENT_POD
-  TEST_FILENAME="13-a-pod2external.txt"
+    TEST_CLIENT_POD=$REMOTE_CLIENT_POD
+    TEST_FILENAME="13-a-pod2external.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_HTTP_DST=$EXTERNAL_URL
-    TEST_SERVER_HTTP_DST_PORT=
-    TEST_SERVER_RSP=$EXTERNAL_SERVER_STRING
-    process-curl
-  fi
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_HTTP_DST=$EXTERNAL_URL
+      TEST_SERVER_HTTP_DST_PORT=
+      TEST_SERVER_RSP=$EXTERNAL_SERVER_STRING
+      process-curl
+    fi
 
-  if [ "$IPERF" == true ]; then
-    if [ "$FT_NOTES" == true ]; then
-      echo -e "${BLUE}iperf Skipped - No external iperf server.${NC}"
-      echo
-      echo "iperf Skipped - No external iperf server." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+    if [ "$IPERF" == true ]; then
+      if [ "$FT_NOTES" == true ]; then
+        echo -e "${BLUE}iperf Skipped - No external iperf server.${NC}"
+        echo
+        echo "iperf Skipped - No external iperf server." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+      fi
+    fi
+
+    if [ "$OVN_TRACE" == true ]; then 
+      TEST_SERVER_OVNTRACE_SERVICE=
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=
+      TEST_SERVER_OVNTRACE_RMTHOST=$EXTERNAL_SERVER_STRING
+      process-ovn-trace
     fi
   fi
-
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=
-    TEST_SERVER_OVNTRACE_RMTHOST=$EXTERNAL_SERVER_STRING
-    process-ovn-trace
-  fi
-
 
   echo
   echo "*** 13-b: Host -> External Network ***"
@@ -1395,41 +1410,43 @@ if [ "$FT_NOTES" == true ]; then
     echo "FLOW 14: External Network -> Cluster IP Service traffic"
     echo "-------------------------------------------------------"
 
-    echo
-    echo "*** 14-a: External Network -> Cluster IP Service traffic (Pod Backend) ***"
-    echo
+    if [ "$FT_HOSTONLY" == false ]; then
+      echo
+      echo "*** 14-a: External Network -> Cluster IP Service traffic (Pod Backend) ***"
+      echo
 
-    TEST_CLIENT_POD=
-    TEST_FILENAME="14-a-external2clusterIpSvc-podBackend.txt"
+      TEST_CLIENT_POD=
+      TEST_FILENAME="14-a-external2clusterIpSvc-podBackend.txt"
 
-    if [ "$CURL" == true ]; then
-      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_IPV4
-      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-      TEST_SERVER_RSP=$POD_SERVER_STRING
-      #process-curl
-      if [ "$FT_NOTES" == true ]; then
-        echo "curl SvcClusterIP:NODEPORT"
-        echo "$CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-        echo -e "${BLUE}Test Skipped - SVCIP is only in cluster network${NC}"
-        echo
+      if [ "$CURL" == true ]; then
+        TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_IPV4
+        TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+        TEST_SERVER_RSP=$POD_SERVER_STRING
+        #process-curl
+        if [ "$FT_NOTES" == true ]; then
+          echo "curl SvcClusterIP:NODEPORT"
+          echo "$CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+          echo -e "${BLUE}Test Skipped - SVCIP is only in cluster network${NC}"
+          echo
+        fi
       fi
-    fi
 
-    if [ "$IPERF" == true ]; then
-      if [ "$FT_NOTES" == true ]; then
-        echo -e "${BLUE}iperf Skipped - No external iperf client.${NC}"
-        echo
-        echo "iperf Skipped - No external iperf client." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+      if [ "$IPERF" == true ]; then
+        if [ "$FT_NOTES" == true ]; then
+          echo -e "${BLUE}iperf Skipped - No external iperf client.${NC}"
+          echo
+          echo "iperf Skipped - No external iperf client." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+        fi
       fi
-    fi
 
-    if [ "$OVN_TRACE" == true ]; then 
-      if [ "$FT_NOTES" == true ]; then
-        echo "OVN-TRACE: BEGIN"
-        echo -e "${BLUE}ovn-trace Skipped.${NC}"
-        echo "OVN-TRACE: END"
-        echo
-        echo "ovn-trace Skipped." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+      if [ "$OVN_TRACE" == true ]; then 
+        if [ "$FT_NOTES" == true ]; then
+          echo "OVN-TRACE: BEGIN"
+          echo -e "${BLUE}ovn-trace Skipped.${NC}"
+          echo "OVN-TRACE: END"
+          echo
+          echo "ovn-trace Skipped." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+        fi
       fi
     fi
 
@@ -1480,60 +1497,61 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 15 ]; then
   echo "FLOW 15: External Network -> NodePort Service traffic"
   echo "-----------------------------------------------------"
 
-  echo
-  echo "*** 15-a: External Network -> NodePort Service traffic (Pod Backend) ***"
-  echo
+  if [ "$FT_HOSTONLY" == false ]; then
+    echo
+    echo "*** 15-a: External Network -> NodePort Service traffic (Pod Backend) ***"
+    echo
 
-  TEST_CLIENT_POD=
-  TEST_FILENAME="15-a-external2nodePortSvc-podBackend.txt"
+    TEST_CLIENT_POD=
+    TEST_FILENAME="15-a-external2nodePortSvc-podBackend.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$POD_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$POD_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_POD_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    #echo "curl SvcClusterIP:NODEPORT"
-    #process-curl
-    if [ "$FT_NOTES" == true ]; then
-      echo "curl SvcClusterIP:NODEPORT"
-      echo "$CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-      echo -e "${BLUE}Test Skipped - SVCIP is only in cluster network${NC}"
-      echo
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_POD_SVC_IPV4
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      #echo "curl SvcClusterIP:NODEPORT"
+      #process-curl
+      if [ "$FT_NOTES" == true ]; then
+        echo "curl SvcClusterIP:NODEPORT"
+        echo "$CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+        echo -e "${BLUE}Test Skipped - SVCIP is only in cluster network${NC}"
+        echo
+      fi
+
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_POD_SVC_PORT
+      echo "curl EndPointIP:NODEPORT"
+      process-curl
+
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_POD_SVC_PORT
+      #echo "curl SvcName:NODEPORT"
+      #process-curl
+      if [ "$FT_NOTES" == true ]; then
+        echo "curl SvcName:NODEPORT"
+        echo "$CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+        echo -e "${BLUE}Test Skipped - SVC HostName only resolves in cluster network${NC}"
+        echo
+      fi
     fi
 
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_POD_SVC_PORT
-    echo "curl EndPointIP:NODEPORT"
-    process-curl
-
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_POD_SVC_PORT
-    #echo "curl SvcName:NODEPORT"
-    #process-curl
-    if [ "$FT_NOTES" == true ]; then
-      echo "curl SvcName:NODEPORT"
-      echo "$CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-      echo -e "${BLUE}Test Skipped - SVC HostName only resolves in cluster network${NC}"
-      echo
+    if [ "$IPERF" == true ]; then
+      if [ "$FT_NOTES" == true ]; then
+        echo -e "${BLUE}iperf Skipped - No external iperf client.${NC}"
+        echo
+        echo "iperf Skipped - No external iperf client." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+      fi
     fi
-  fi
 
-
-  if [ "$IPERF" == true ]; then
-    if [ "$FT_NOTES" == true ]; then
-      echo -e "${BLUE}iperf Skipped - No external iperf client.${NC}"
-      echo
-      echo "iperf Skipped - No external iperf client." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
-    fi
-  fi
-
-  if [ "$OVN_TRACE" == true ]; then 
-    if [ "$FT_NOTES" == true ]; then
-      echo "OVN-TRACE: BEGIN"
-      echo -e "${BLUE}ovn-trace Skipped.${NC}"
-      echo "OVN-TRACE: END"
-      echo
-      echo "ovn-trace Skipped." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+    if [ "$OVN_TRACE" == true ]; then 
+      if [ "$FT_NOTES" == true ]; then
+        echo "OVN-TRACE: BEGIN"
+        echo -e "${BLUE}ovn-trace Skipped.${NC}"
+        echo "OVN-TRACE: END"
+        echo
+        echo "ovn-trace Skipped." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+      fi
     fi
   fi
 
