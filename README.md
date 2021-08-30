@@ -231,7 +231,7 @@ Default/Override Values:
   From YAML Files:
     NET_ATTACH_DEF_NAME                ftnetattach
     SRIOV_RESOURCE_NAME                openshift.io/mlnx_bf
-    TEST_IMAGE                         quay.io/billy99/ft-base-image:0.6
+    TEST_IMAGE                         quay.io/billy99/ft-base-image:0.7
     HTTP_CLUSTERIP_POD_SVC_PORT        8080
     HTTP_CLUSTERIP_HOST_SVC_PORT       8081
     HTTP_NODEPORT_POD_SVC_PORT         30080
@@ -350,7 +350,7 @@ overridden by setting these variables (with their default values):
 
 ```
   SRIOV_RESOURCE_NAME=openshift.io/mlnx_bf
-  TEST_IMAGE=quay.io/billy99/ft-base-image:0.6
+  TEST_IMAGE=quay.io/billy99/ft-base-image:0.7
 
   HTTP_CLUSTERIP_POD_SVC_PORT=8080
   HTTP_CLUSTERIP_HOST_SVC_PORT=8081
@@ -680,21 +680,5 @@ how a packet flows through OVN-Kubernetes for a particular flow.
 
 ## Container Images
 
-The `http-server` pods currently use `registry.access.redhat.com/ubi8/python-38` image
-to implement the http server.
-
-The `client` pods and the `iperf-server` pods are using the same image, which uses
-`docker.io/centos:8` as the base with `curl` and `iperf3` packages pulled in. The
-image has been built and pushed to `quay.io` for use by this repo.
-
-```
-quay.io/billy99/ft-base-image:0.6
-```
-
-To build the image:
-
-```
-cd ~/src/ovn-kuber-traffic-flow-tests/images/base-image/
-
-sudo podman build -t quay.io/<USER>/ft-base-image:<TAG> -f ./Dockerfile .
-```
+See [IMAGES.md](IMAGES.md) for details on the container images used in this repo and
+how to rebuild them.
