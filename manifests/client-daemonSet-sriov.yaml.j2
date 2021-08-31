@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: ft-client-pod-smartnic
+  name: ft-client-pod-sriov
 spec:
   selector:
     matchLabels:
@@ -26,4 +26,4 @@ spec:
           limits:
             {{ sriov_resource_name }}: '1'
       nodeSelector:
-        ft.ClientPod: smartnic
+        ft.ClientPod: sriov

@@ -22,11 +22,11 @@ generate_yamls() {
   test_image=${TEST_IMAGE} \
   j2 "./manifests/client-daemonSet-host.yaml.j2" -o "./manifests/yamls/client-daemonSet-host.yaml"
 
-  # client-daemonSet-smartNic.yaml
+  # client-daemonSet-sriov.yaml
   net_attach_def_name=${NET_ATTACH_DEF_NAME} \
   sriov_resource_name=${SRIOV_RESOURCE_NAME} \
   test_image=${TEST_IMAGE} \
-  j2 "./manifests/client-daemonSet-smartNic.yaml.j2" -o "./manifests/yamls/client-daemonSet-smartNic.yaml"
+  j2 "./manifests/client-daemonSet-sriov.yaml.j2" -o "./manifests/yamls/client-daemonSet-sriov.yaml"
 
   # client-daemonSet.yaml
   test_image=${TEST_IMAGE} \
@@ -40,11 +40,11 @@ generate_yamls() {
   http_clusterip_host_svc_port=${HTTP_CLUSTERIP_HOST_SVC_PORT} \
   j2 "./manifests/http-server-pod-v4-host.yaml.j2" -o "./manifests/yamls/http-server-pod-v4-host.yaml"
 
-  # http-server-pod-v4-smartNic
+  # http-server-pod-v4-sriov
   net_attach_def_name=${NET_ATTACH_DEF_NAME} \
   sriov_resource_name=${SRIOV_RESOURCE_NAME} \
   http_clusterip_pod_svc_port=${HTTP_CLUSTERIP_POD_SVC_PORT} \
-  j2 "./manifests/http-server-pod-v4-smartNic.yaml.j2" -o "./manifests/yamls/http-server-pod-v4-smartNic.yaml"
+  j2 "./manifests/http-server-pod-v4-sriov.yaml.j2" -o "./manifests/yamls/http-server-pod-v4-sriov.yaml"
 
   # http-server-pod-v4.yaml
   http_clusterip_pod_svc_port=${HTTP_CLUSTERIP_POD_SVC_PORT} \
@@ -59,12 +59,12 @@ generate_yamls() {
   iperf_clusterip_host_svc_port=${IPERF_CLUSTERIP_HOST_SVC_PORT} \
   j2 "./manifests/iperf-server-pod-v4-host.yaml.j2" -o "./manifests/yamls/iperf-server-pod-v4-host.yaml"
 
-  # iperf-server-pod-v4-smartNic.yaml
+  # iperf-server-pod-v4-sriov.yaml
   net_attach_def_name=${NET_ATTACH_DEF_NAME} \
   sriov_resource_name=${SRIOV_RESOURCE_NAME} \
   test_image=${TEST_IMAGE} \
   iperf_clusterip_pod_svc_port=${IPERF_CLUSTERIP_POD_SVC_PORT} \
-  j2 "./manifests/iperf-server-pod-v4-smartNic.yaml.j2" -o "./manifests/yamls/iperf-server-pod-v4-smartNic.yaml"
+  j2 "./manifests/iperf-server-pod-v4-sriov.yaml.j2" -o "./manifests/yamls/iperf-server-pod-v4-sriov.yaml"
 
   # iperf-server-pod-v4.yaml
   test_image=${TEST_IMAGE} \
