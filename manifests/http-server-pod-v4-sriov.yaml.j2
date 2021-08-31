@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ft-http-server-pod-index-smartnic
+  name: ft-http-server-pod-index-sriov
 data:
   index.html: |
     <!doctype html>
@@ -47,4 +47,4 @@ spec:
   - name: ft-http-server-index
     configMap:
       defaultMode: 0644
-      name: ft-http-server-pod-index-smartnic
+      name: ft-http-server-pod-index-sriov

@@ -31,6 +31,7 @@ dump-working-data() {
   echo "    FT_HOSTONLY                        $FT_HOSTONLY"
   echo "    FT_REQ_SERVER_NODE                 $FT_REQ_SERVER_NODE"
   echo "    FT_REQ_REMOTE_CLIENT_NODE          $FT_REQ_REMOTE_CLIENT_NODE"
+  echo "    FT_SRIOV_NODE_LABEL                $FT_SRIOV_NODE_LABEL"
   echo "  From YAML Files:"
   echo "    NET_ATTACH_DEF_NAME                $NET_ATTACH_DEF_NAME"
   echo "    SRIOV_RESOURCE_NAME                $SRIOV_RESOURCE_NAME"
@@ -65,6 +66,18 @@ if [ ! -z "$1" ] ; then
     echo "  FT_REQ_REMOTE_CLIENT_NODE  - Node to use when sending from client pod on different node"
     echo "                               from server. Example:"
     echo "                                 FT_REQ_REMOTE_CLIENT_NODE=ovn-worker4 ./test.sh"
+    echo "  FT_SRIOV_NODE_LABEL        - SR-IOV is not easy to detect. If Server or Client pods need"
+    echo "                               SR-IOV VFs to work, add a label to each node supporting SR-IOV"
+    echo "                               and provide the label here. Default value is what is used"
+    echo "                               by OpenShift to mark a SmartNIC."
+    echo "                               Default: network.operator.openshift.io/external-openvswitch"
+    echo "                               Example:"
+    echo "                                 FT_SRIOV_NODE_LABEL=sriov-node ./launch.sh"
+    echo "  SRIOV_RESOURCE_NAME        - launch.sh does not touch SR-IOV Device Plugin. If a node supports"
+    echo "                               SR-IOV VFs, use this field to pass in the \"resourceName\" to be"
+    echo "                               used in the NetworkAttachmentDefinition. Default: openshift.io/mlnx_bf"
+    echo "                               Example:"
+    echo "                                 SRIOV_RESOURCE_NAME=sriov_a ./launch.sh"
 
     dump-working-data
     dump_labels
@@ -81,14 +94,13 @@ dump-working-data
 install_j2_renderer
 generate_yamls
 
-FT_LABEL_ACTION=add
-FT_SMARTNIC_SERVER=false
+FT_SRIOV_SERVER=false
 FT_NORMAL_CLIENT=false
-FT_SMARTNIC_CLIENT=false
-manage_labels
+FT_SRIOV_CLIENT=false
+add_labels
 
 if [ "$FT_HOSTONLY" == false ]; then
-  if [ "$FT_SMARTNIC_SERVER" == true ] || [ "$FT_SMARTNIC_CLIENT" == true ]; then
+  if [ "$FT_SRIOV_SERVER" == true ] || [ "$FT_SRIOV_CLIENT" == true ]; then
     kubectl apply -f ./manifests/yamls/netAttachDef-sriov.yaml
   fi
 
@@ -96,10 +108,10 @@ if [ "$FT_HOSTONLY" == false ]; then
   kubectl apply -f ./manifests/yamls/svc-nodePort.yaml
   kubectl apply -f ./manifests/yamls/svc-clusterIP.yaml
 
-  # Launch "smartnic" daemonset as well if node has it enabled 
-  if [ "$FT_SMARTNIC_SERVER" == true ]; then
-    kubectl apply -f ./manifests/yamls/http-server-pod-v4-smartNic.yaml
-    kubectl apply -f ./manifests/yamls/iperf-server-pod-v4-smartNic.yaml
+  # Launch "SR-IOV" daemonset as well if node has it enabled 
+  if [ "$FT_SRIOV_SERVER" == true ]; then
+    kubectl apply -f ./manifests/yamls/http-server-pod-v4-sriov.yaml
+    kubectl apply -f ./manifests/yamls/iperf-server-pod-v4-sriov.yaml
   else
     kubectl apply -f ./manifests/yamls/http-server-pod-v4.yaml
     kubectl apply -f ./manifests/yamls/iperf-server-pod-v4.yaml
@@ -108,8 +120,8 @@ if [ "$FT_HOSTONLY" == false ]; then
   if [ "$FT_NORMAL_CLIENT" == true ]; then
     kubectl apply -f ./manifests/yamls/client-daemonSet.yaml
   fi
-  if [ "$FT_SMARTNIC_CLIENT" == true ]; then
-    kubectl apply -f ./manifests/yamls/client-daemonSet-smartNic.yaml
+  if [ "$FT_SRIOV_CLIENT" == true ]; then
+    kubectl apply -f ./manifests/yamls/client-daemonSet-sriov.yaml
   fi
 fi
 

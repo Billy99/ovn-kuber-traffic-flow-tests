@@ -62,25 +62,24 @@ fi
 
 dump-working-data
 
-# Call manage_labels() with ADD again to set flags so know what to delete
-FT_LABEL_ACTION=add
-FT_SMARTNIC_SERVER=false
+# Call query_labels() to set flags so know what to delete
+FT_SRIOV_SERVER=false
 FT_NORMAL_CLIENT=false
-FT_SMARTNIC_CLIENT=false
-manage_labels
+FT_SRIOV_CLIENT=false
+query_labels
 
 if [ "$FT_HOSTONLY" == false ]; then
   # Delete normal Pods and Service
   if [ "$FT_NORMAL_CLIENT" == true ]; then
     kubectl delete -f ./manifests/yamls/client-daemonSet.yaml
   fi
-  if [ "$FT_SMARTNIC_CLIENT" == true ]; then
-    kubectl delete -f ./manifests/yamls/client-daemonSet-smartNic.yaml
+  if [ "$FT_SRIOV_CLIENT" == true ]; then
+    kubectl delete -f ./manifests/yamls/client-daemonSet-sriov.yaml
   fi
 
-  if [ "$FT_SMARTNIC_SERVER" == true ]; then
-    kubectl delete -f ./manifests/yamls/iperf-server-pod-v4-smartNic.yaml
-    kubectl delete -f ./manifests/yamls/http-server-pod-v4-smartNic.yaml
+  if [ "$FT_SRIOV_SERVER" == true ]; then
+    kubectl delete -f ./manifests/yamls/iperf-server-pod-v4-sriov.yaml
+    kubectl delete -f ./manifests/yamls/http-server-pod-v4-sriov.yaml
   else
     kubectl delete -f ./manifests/yamls/iperf-server-pod-v4.yaml
     kubectl delete -f ./manifests/yamls/http-server-pod-v4.yaml
@@ -99,12 +98,11 @@ kubectl delete -f ./manifests/yamls/http-server-pod-v4-host.yaml
 kubectl delete -f ./manifests/yamls/client-daemonSet-host.yaml
 
 
-if [ "$FT_SMARTNIC_SERVER" == true ] || [ "$FT_SMARTNIC_CLIENT" == true ]; then
+if [ "$FT_SRIOV_SERVER" == true ] || [ "$FT_SRIOV_CLIENT" == true ]; then
   kubectl delete -f ./manifests/yamls/netAttachDef-sriov.yaml
 fi
 
-FT_LABEL_ACTION=delete
-manage_labels
+del_labels
 
 if [ "$CLEAN_ALL" == true ]; then
   rm -rf manifests/yamls/*.yaml

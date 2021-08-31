@@ -14,6 +14,7 @@ This repository contains the yaml files and test scripts to test all the traffic
      - [Pin Servers to Given Node](#pin-servers-to-given-node)
      - [Pin Remote Client to Given Node](#pin-remote-client-to-given-node)
      - [Limit Test to Only Host-Backed Pods](#limit-test-to-only-host-backed-pods)
+     - [Deploy With SR-IOV VFs](#deploy-with-sr-iov-vfs)
      - [Check Variable Settings](#check-variable-settings)
   - [Cleanup Test Pods](#cleanup-test-pods)
   - [Deployment Customization](#deployment-customization)
@@ -198,9 +199,35 @@ export FT_HOSTONLY=true"
 ./cleanup.sh
 ```
 
+#### Deploy With SR-IOV VFs
+
+To use Flow-Test with SR-IOV VFs, settings need to be applied before launch.sh. Flow-Test
+needs to know which nodes are running with SR-IOV NICs and needs to know the ResourceName
+used by SR-IOV Device Plugin (Flow-Test does not launch or touch SR-IOV Device Plugin).
+These settings are controlled with the following variables:
+
+```
+export FT_SRIOV_NODE_LABEL=network.operator.openshift.io/external-openvswitch"
+export SRIOV_RESOURCE_NAME=openshift.io/mlnx_bf"
+./launch.sh
+```
+
+The default values (shown above) are the values used by OpenShift in a NVIDIA BlueField-2
+deployment. If the default values don't work, apply any label to nodes running with SR-IOV
+NICs, and set the variable above. Example:
+
+```
+kubectl label nodes ovn-worker4 sriov-node=
+kubectl label nodes ovn-worker5 sriov-node=
+
+export FT_SRIOV_NODE_LABEL=sriov-node"
+export SRIOV_RESOURCE_NAME=sriov_a"
+./launch.sh
+```
+
 #### Check Variable Settings
 
-If you can't remember all the variable names, or if they were set in a particular
+If you can't remember all the variable names, or to check if they were set in a particular
 window, use the `--help` option on each script:
 
 ```
@@ -241,7 +268,6 @@ Default/Override Values:
     IPERF_NODEPORT_POD_SVC_PORT        30201
     IPERF_NODEPORT_HOST_SVC_PORT       30202
   Label Management:
-    FT_LABEL_ACTION                    
     FT_REQ_SERVER_NODE                 all
     FT_SERVER_NODE_LABEL               ft.ServerPod
     FT_CLIENT_NODE_LABEL               ft.ClientPod
@@ -310,7 +336,6 @@ Default/Override Values:
     FT_REQ_SERVER_NODE                 all
     FT_REQ_REMOTE_CLIENT_NODE          
   Label Management:
-    FT_LABEL_ACTION                    
     FT_REQ_SERVER_NODE                 all
     FT_SERVER_NODE_LABEL               ft.ServerPod
     FT_CLIENT_NODE_LABEL               ft.ClientPod
@@ -680,5 +705,5 @@ how a packet flows through OVN-Kubernetes for a particular flow.
 
 ## Container Images
 
-See [IMAGES.md](IMAGES.md) for details on the container images used in this repo and
-how to rebuild them.
+See [docs/IMAGES.md](docs/IMAGES.md) for details on the container images used in this repo
+and how to rebuild them.
