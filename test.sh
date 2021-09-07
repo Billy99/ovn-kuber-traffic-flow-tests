@@ -1,5 +1,16 @@
 #!/bin/bash
 
+shopt -s expand_aliases
+
+# Source the functions in utilities.sh
+. utilities.sh
+
+# Make sure kubectl is installed. Create an alias if not.
+# This needs to be done before other files are sourced.
+test_for_kubectl
+
+
+# Local variables
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -61,6 +72,7 @@ EXTERNAL_URL=${EXTERNAL_URL:-google.com}
 # Trace Control
 OVN_K_NAMESPACE=${OVN_K_NAMESPACE:-"ovn-kubernetes"}
 SSL_ENABLE=${SSL_ENABLE:-"-noSSL"}
+
 #
 # Query for dynamic data
 #
