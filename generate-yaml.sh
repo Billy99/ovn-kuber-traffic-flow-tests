@@ -1,14 +1,35 @@
 #!/bin/bash
 
-install_j2_renderer() {
+shopt -s expand_aliases
 
-  j2 -v  &>/dev/null
+install_j2_renderer() {
+  # Determine if `j2 renderer` is installed
+  j2 -v &>/dev/null
 
   if [ $? != 0 ]; then
-    # ensure j2 renderer installed
-    pip install wheel --user
-    pip freeze | grep j2cli || pip install j2cli[yaml] --user
-    export PATH=~/.local/bin:$PATH
+    # Determine if `pip` is installed
+    pip -V &>/dev/null
+    if [ $? == 0 ]; then
+      pip install wheel --user
+      pip freeze | grep j2cli || pip install j2cli[yaml] --user
+      export PATH=~/.local/bin:$PATH
+    else
+      # Determine if `pip3` is installed
+      pip3 -V &>/dev/null
+      if [ $? != 0 ]; then
+        dnf install python3-pip python3-wheel
+        if [ $? != 0 ]; then
+          echo
+          echo "Install \`j2\` or install \`pip\` or \`pip3\` so script can install \`j2\`. Exiting ..."
+          echo
+          exit 1
+        fi
+      fi
+
+      pip3 install wheel --user
+      pip3 freeze | grep j2cli || pip3 install j2cli[yaml] --user
+      export PATH=~/.local/bin:$PATH
+    fi
   fi
 }
 

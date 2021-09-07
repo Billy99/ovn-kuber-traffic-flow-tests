@@ -1,6 +1,15 @@
 #!/bin/bash
 
-# source the functions in generate-yaml.sh and labels.sh
+shopt -s expand_aliases
+
+# Source the functions in utilities.sh
+. utilities.sh
+
+# Make sure kubectl is installed. Create an alias if not.
+# This needs to be done before other files are sourced.
+test_for_kubectl
+
+# Source the functions in generate-yaml.sh and labels.sh
 . generate-yaml.sh
 . labels.sh
 
@@ -89,6 +98,7 @@ if [ ! -z "$1" ] ; then
 
   exit 0
 fi
+
 
 dump-working-data
 install_j2_renderer
