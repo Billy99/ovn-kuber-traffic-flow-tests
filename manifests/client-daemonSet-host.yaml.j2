@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: ft-client-pod-host
+  namespace: {{ namespace }}
 spec:
   selector:
     matchLabels:

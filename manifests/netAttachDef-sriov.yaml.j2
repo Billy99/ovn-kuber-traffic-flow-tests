@@ -3,7 +3,7 @@ apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
   name: {{ net_attach_def_name }}
-  namespace: default
+  namespace: {{ namespace }}
   annotations:
     k8s.v1.cni.cncf.io/resourceName: {{ sriov_resource_name }}
 spec:

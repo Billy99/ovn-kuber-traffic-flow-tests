@@ -18,6 +18,7 @@ test_for_kubectl
 #
 
 FT_HOSTONLY=${FT_HOSTONLY:-false}
+FT_NAMESPACE=${FT_NAMESPACE:-default}
 
 NET_ATTACH_DEF_NAME=${NET_ATTACH_DEF_NAME:-ftnetattach}
 SRIOV_RESOURCE_NAME=${SRIOV_RESOURCE_NAME:-openshift.io/mlnx_bf}
@@ -38,6 +39,7 @@ dump-working-data() {
   echo "Default/Override Values:"
   echo "  Launch Control:"
   echo "    FT_HOSTONLY                        $FT_HOSTONLY"
+  echo "    FT_NAMESPACE                       $FT_NAMESPACE"
   echo "    FT_REQ_SERVER_NODE                 $FT_REQ_SERVER_NODE"
   echo "    FT_REQ_REMOTE_CLIENT_NODE          $FT_REQ_REMOTE_CLIENT_NODE"
   echo "    FT_SRIOV_NODE_LABEL                $FT_SRIOV_NODE_LABEL"
@@ -66,6 +68,14 @@ if [ ! -z "$1" ] ; then
     echo "                               false positives could occur if pods are renamed or server pod"
     echo "                               failed to come up. Example:"
     echo "                                 export FT_HOSTONLY=true"
+    echo "                                 ./launch.sh"
+    echo "                                 ./test.sh"
+    echo "                                 ./cleanup.sh"
+    echo "  FT_NAMESPACE               - Namespace for all pods, configMaps and services associated with"
+    echo "                               Flow Tester. Defaults to \"default\" namespace. It is best to"
+    echo "                               export this variable because test.sh and cleanup.sh also need"
+    echo "                               the same value set. Example:"
+    echo "                                 export FT_NAMESPACE=flow-test"
     echo "                                 ./launch.sh"
     echo "                                 ./test.sh"
     echo "                                 ./cleanup.sh"
@@ -108,6 +118,11 @@ FT_SRIOV_SERVER=false
 FT_NORMAL_CLIENT=false
 FT_SRIOV_CLIENT=false
 add_labels
+
+if [ "$FT_NAMESPACE" != default ]; then
+  echo "Creating Namespace"
+  kubectl apply -f ./manifests/yamls/namespace.yaml
+fi
 
 if [ "$FT_HOSTONLY" == false ]; then
   if [ "$FT_SRIOV_SERVER" == true ] || [ "$FT_SRIOV_CLIENT" == true ]; then

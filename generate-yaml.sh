@@ -36,20 +36,29 @@ install_j2_renderer() {
 generate_yamls() {
 
   #
+  # Namespace
+  #
+  namespace=${FT_NAMESPACE} \
+  j2 "./manifests/namespace.yaml.j2" -o "./manifests/yamls/namespace.yaml"
+
+  #
   # Client Pods
   #
 
   # client-daemonSet-host.yaml
+  namespace=${FT_NAMESPACE} \
   test_image=${TEST_IMAGE} \
   j2 "./manifests/client-daemonSet-host.yaml.j2" -o "./manifests/yamls/client-daemonSet-host.yaml"
 
   # client-daemonSet-sriov.yaml
+  namespace=${FT_NAMESPACE} \
   net_attach_def_name=${NET_ATTACH_DEF_NAME} \
   sriov_resource_name=${SRIOV_RESOURCE_NAME} \
   test_image=${TEST_IMAGE} \
   j2 "./manifests/client-daemonSet-sriov.yaml.j2" -o "./manifests/yamls/client-daemonSet-sriov.yaml"
 
   # client-daemonSet.yaml
+  namespace=${FT_NAMESPACE} \
   test_image=${TEST_IMAGE} \
   j2 "./manifests/client-daemonSet.yaml.j2" -o "./manifests/yamls/client-daemonSet.yaml"
 
@@ -58,16 +67,19 @@ generate_yamls() {
   #
 
   # http-server-pod-v4-host.yaml
+  namespace=${FT_NAMESPACE} \
   http_clusterip_host_svc_port=${HTTP_CLUSTERIP_HOST_SVC_PORT} \
   j2 "./manifests/http-server-pod-v4-host.yaml.j2" -o "./manifests/yamls/http-server-pod-v4-host.yaml"
 
   # http-server-pod-v4-sriov
+  namespace=${FT_NAMESPACE} \
   net_attach_def_name=${NET_ATTACH_DEF_NAME} \
   sriov_resource_name=${SRIOV_RESOURCE_NAME} \
   http_clusterip_pod_svc_port=${HTTP_CLUSTERIP_POD_SVC_PORT} \
   j2 "./manifests/http-server-pod-v4-sriov.yaml.j2" -o "./manifests/yamls/http-server-pod-v4-sriov.yaml"
 
   # http-server-pod-v4.yaml
+  namespace=${FT_NAMESPACE} \
   http_clusterip_pod_svc_port=${HTTP_CLUSTERIP_POD_SVC_PORT} \
   j2 "./manifests/http-server-pod-v4.yaml.j2" -o "./manifests/yamls/http-server-pod-v4.yaml"
 
@@ -76,11 +88,13 @@ generate_yamls() {
   #
 
   # iperf-server-pod-v4-host.yaml
+  namespace=${FT_NAMESPACE} \
   test_image=${TEST_IMAGE} \
   iperf_clusterip_host_svc_port=${IPERF_CLUSTERIP_HOST_SVC_PORT} \
   j2 "./manifests/iperf-server-pod-v4-host.yaml.j2" -o "./manifests/yamls/iperf-server-pod-v4-host.yaml"
 
   # iperf-server-pod-v4-sriov.yaml
+  namespace=${FT_NAMESPACE} \
   net_attach_def_name=${NET_ATTACH_DEF_NAME} \
   sriov_resource_name=${SRIOV_RESOURCE_NAME} \
   test_image=${TEST_IMAGE} \
@@ -88,6 +102,7 @@ generate_yamls() {
   j2 "./manifests/iperf-server-pod-v4-sriov.yaml.j2" -o "./manifests/yamls/iperf-server-pod-v4-sriov.yaml"
 
   # iperf-server-pod-v4.yaml
+  namespace=${FT_NAMESPACE} \
   test_image=${TEST_IMAGE} \
   iperf_clusterip_pod_svc_port=${IPERF_CLUSTERIP_POD_SVC_PORT} \
   j2 "./manifests/iperf-server-pod-v4.yaml.j2" -o "./manifests/yamls/iperf-server-pod-v4.yaml"
@@ -98,6 +113,7 @@ generate_yamls() {
   #
 
   # netAttachDef-sriov.yaml
+  namespace=${FT_NAMESPACE} \
   net_attach_def_name=${NET_ATTACH_DEF_NAME} \
   sriov_resource_name=${SRIOV_RESOURCE_NAME} \
   iperf_clusterip_host_svc_port=${IPERF_CLUSTERIP_HOST_SVC_PORT} \
@@ -109,16 +125,19 @@ generate_yamls() {
   #
 
   # svc-clusterIP.yaml
+  namespace=${FT_NAMESPACE} \
   http_clusterip_host_svc_port=${HTTP_CLUSTERIP_HOST_SVC_PORT} \
   iperf_clusterip_host_svc_port=${IPERF_CLUSTERIP_HOST_SVC_PORT} \
   j2 "./manifests/svc-clusterIP-host.yaml.j2" -o "./manifests/yamls/svc-clusterIP-host.yaml"
 
   # svc-clusterIP.yaml
+  namespace=${FT_NAMESPACE} \
   http_clusterip_pod_svc_port=${HTTP_CLUSTERIP_POD_SVC_PORT} \
   iperf_clusterip_pod_svc_port=${IPERF_CLUSTERIP_POD_SVC_PORT} \
   j2 "./manifests/svc-clusterIP.yaml.j2" -o "./manifests/yamls/svc-clusterIP.yaml"
 
   # svc-nodePort-host.yaml
+  namespace=${FT_NAMESPACE} \
   http_clusterip_host_svc_port=${HTTP_CLUSTERIP_HOST_SVC_PORT} \
   http_nodeport_host_svc_port=${HTTP_NODEPORT_HOST_SVC_PORT} \
   iperf_clusterip_host_svc_port=${IPERF_CLUSTERIP_HOST_SVC_PORT} \
@@ -126,6 +145,7 @@ generate_yamls() {
   j2 "./manifests/svc-nodePort-host.yaml.j2" -o "./manifests/yamls/svc-nodePort-host.yaml"
 
   # svc-nodePort.yaml
+  namespace=${FT_NAMESPACE} \
   http_clusterip_pod_svc_port=${HTTP_CLUSTERIP_POD_SVC_PORT} \
   http_nodeport_pod_svc_port=${HTTP_NODEPORT_POD_SVC_PORT} \
   iperf_clusterip_pod_svc_port=${IPERF_CLUSTERIP_POD_SVC_PORT} \

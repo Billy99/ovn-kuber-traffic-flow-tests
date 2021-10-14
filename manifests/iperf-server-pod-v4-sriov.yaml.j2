@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: ft-iperf-server-pod-v4
+  namespace: {{ namespace }}
   annotations:
     v1.multus-cni.io/default-network: default/{{ net_attach_def_name }}
   labels:
