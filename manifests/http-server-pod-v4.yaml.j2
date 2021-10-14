@@ -3,6 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ft-http-server-pod-index
+  namespace: {{ namespace }}
 data:
   index.html: |
     <!doctype html>
@@ -19,6 +20,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: ft-http-server-pod-v4
+  namespace: {{ namespace }}
   labels:
     pod-name: ft-http-server-pod-v4
 spec:

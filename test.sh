@@ -35,6 +35,7 @@ IPERF_TIME=${IPERF_TIME:-10}
 OVN_TRACE=${OVN_TRACE:-false}
 OVN_TRACE_CMD=${OVN_TRACE_CMD:-./ovnkube-trace -loglevel=5 -tcp}
 FT_HOSTONLY=${FT_HOSTONLY:-unknown}
+FT_NAMESPACE=${FT_NAMESPACE:-default}
 
 # From YAML Files
 CLIENT_POD_NAME_PREFIX=${CLIENT_POD_NAME_PREFIX:-ft-client-pod}
@@ -76,12 +77,12 @@ SSL_ENABLE=${SSL_ENABLE:-"-noSSL"}
 #
 # Query for dynamic data
 #
-SERVER_POD_NODE=`kubectl get pods -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $7}'`
+SERVER_POD_NODE=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $7}'`
 
-HTTP_SERVER_POD_IP=`kubectl get pods -o wide | grep $HTTP_SERVER_POD_NAME  | awk -F' ' '{print $6}'`
-HTTP_SERVER_HOST_IP=`kubectl get pods -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
-IPERF_SERVER_POD_IP=`kubectl get pods -o wide | grep $IPERF_SERVER_POD_NAME  | awk -F' ' '{print $6}'`
-IPERF_SERVER_HOST_IP=`kubectl get pods -o wide | grep $IPERF_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
+HTTP_SERVER_POD_IP=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $HTTP_SERVER_POD_NAME  | awk -F' ' '{print $6}'`
+HTTP_SERVER_HOST_IP=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
+IPERF_SERVER_POD_IP=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $IPERF_SERVER_POD_NAME  | awk -F' ' '{print $6}'`
+IPERF_SERVER_HOST_IP=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $IPERF_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
 
 LOCAL_CLIENT_NODE=$SERVER_POD_NODE
 REMOTE_CLIENT_NODE=$LOCAL_CLIENT_NODE
@@ -123,44 +124,44 @@ fi
 
 
 if [ "$FT_HOSTONLY" == false ]; then
-  LOCAL_CLIENT_POD=`kubectl get pods --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
-  REMOTE_CLIENT_POD=`kubectl get pods --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide| grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
+  LOCAL_CLIENT_POD=`kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
+  REMOTE_CLIENT_POD=`kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide| grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
 else
   LOCAL_CLIENT_POD=
   REMOTE_CLIENT_POD=
 fi
 
-LOCAL_CLIENT_HOST_POD=`kubectl get pods --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
-REMOTE_CLIENT_HOST_POD=`kubectl get pods --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
+LOCAL_CLIENT_HOST_POD=`kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
+REMOTE_CLIENT_HOST_POD=`kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
 
-HTTP_CLUSTERIP_POD_SVC_IPV4=`kubectl get services | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'`
-HTTP_CLUSTERIP_POD_SVC_PORT=`kubectl get services | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
+HTTP_CLUSTERIP_POD_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'`
+HTTP_CLUSTERIP_POD_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
 
-HTTP_CLUSTERIP_HOST_SVC_IPV4=`kubectl get services | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-HTTP_CLUSTERIP_HOST_SVC_PORT=`kubectl get services | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
+HTTP_CLUSTERIP_HOST_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'`
+HTTP_CLUSTERIP_HOST_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
 
-HTTP_NODEPORT_POD_SVC_IPV4=`kubectl get services | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $3}'`
-HTTP_NODEPORT_POD_SVC_PORT=`kubectl get services | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
+HTTP_NODEPORT_POD_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $3}'`
+HTTP_NODEPORT_POD_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
 
-HTTP_NODEPORT_HOST_SVC_IPV4=`kubectl get services | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-HTTP_NODEPORT_HOST_SVC_PORT=`kubectl get services | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
+HTTP_NODEPORT_HOST_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
+HTTP_NODEPORT_HOST_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
 
-IPERF_CLUSTERIP_POD_SVC_IPV4=`kubectl get services | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'`
-IPERF_CLUSTERIP_POD_SVC_PORT=`kubectl get services | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}'`
+IPERF_CLUSTERIP_POD_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'`
+IPERF_CLUSTERIP_POD_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}'`
 
-IPERF_CLUSTERIP_HOST_SVC_IPV4=`kubectl get services | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-IPERF_CLUSTERIP_HOST_SVC_PORT=`kubectl get services | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}'`
+IPERF_CLUSTERIP_HOST_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'`
+IPERF_CLUSTERIP_HOST_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}'`
 
-IPERF_NODEPORT_POD_SVC_IPV4=`kubectl get services | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $3}'`
-IPERF_NODEPORT_POD_SVC_PORT=`kubectl get services | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
+IPERF_NODEPORT_POD_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $3}'`
+IPERF_NODEPORT_POD_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
 
-IPERF_NODEPORT_HOST_SVC_IPV4=`kubectl get services | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-IPERF_NODEPORT_HOST_SVC_PORT=`kubectl get services | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
+IPERF_NODEPORT_HOST_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
+IPERF_NODEPORT_HOST_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
 
 
 # NOTE: env in the container has values that could be used instead of using the above commands:
 #
-# kubectl exec -it $LOCAL_CLIENT_POD -- env
+# kubectl exec -it -n ${FT_NAMESPACE} $LOCAL_CLIENT_POD -- env
 #  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 #  HOSTNAME=ft-client-w2rps
 #  container=docker
@@ -181,7 +182,7 @@ IPERF_NODEPORT_HOST_SVC_PORT=`kubectl get services | grep $IPERF_NODEPORT_HOST_S
 #  KUBERNETES_PORT=tcp://10.96.0.1:443
 #  KUBERNETES_PORT_443_TCP_PORT=443
 #
-# kubectl exec -it $LOCAL_CLIENT_POD -- /bin/sh -c 'curl "http://$MY_WEB_SERVICE_NODE_V4_SERVICE_HOST:$MY_WEB_SERVICE_NODE_V4_SERVICE_PORT/"'
+# kubectl exec -it -n ${FT_NAMESPACE} $LOCAL_CLIENT_POD -- /bin/sh -c 'curl "http://$MY_WEB_SERVICE_NODE_V4_SERVICE_HOST:$MY_WEB_SERVICE_NODE_V4_SERVICE_PORT/"'
 
 
 #
@@ -197,6 +198,7 @@ dump-working-data() {
   echo "    FT_VARS                            $FT_VARS"
   echo "    FT_NOTES                           $FT_NOTES"
   echo "    FT_HOSTONLY                        $FT_HOSTONLY"
+  echo "    FT_NAMESPACE                       $FT_NAMESPACE"
   echo "    CURL                               $CURL"
   echo "    CURL_CMD                           $CURL_CMD"
   echo "    IPERF                              $IPERF"
@@ -287,12 +289,12 @@ process-curl() {
     TMP_OUTPUT=`$CURL_CMD "http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/"`
   elif [ -z "${TEST_SERVER_HTTP_DST_PORT}" ]; then
     # No Port, so leave off Port from command
-    echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}/\""
-    TMP_OUTPUT=`kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD "http://${TEST_SERVER_HTTP_DST}/"`
+    echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}/\""
+    TMP_OUTPUT=`kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD "http://${TEST_SERVER_HTTP_DST}/"`
   else
     # Default command
-    echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-    TMP_OUTPUT=`kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD "http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/"`
+    echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+    TMP_OUTPUT=`kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD "http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/"`
   fi
 
   # Dump command output
@@ -313,8 +315,8 @@ process-iperf() {
 
   IPERF_FILENAME="${IPERF_LOGS_DIR}/${TEST_FILENAME}"
 
-  echo "kubectl exec -it $TEST_CLIENT_POD -- $IPERF_CMD -c $TEST_SERVER_IPERF_DST -p $TEST_SERVER_IPERF_DST_PORT -t $IPERF_TIME"
-  kubectl exec -it $TEST_CLIENT_POD -- $IPERF_CMD -c $TEST_SERVER_IPERF_DST -p $TEST_SERVER_IPERF_DST_PORT -t $IPERF_TIME  > ${IPERF_FILENAME}
+  echo "kubectl exec -it -n ${FT_NAMESPACE} $TEST_CLIENT_POD -- $IPERF_CMD -c $TEST_SERVER_IPERF_DST -p $TEST_SERVER_IPERF_DST_PORT -t $IPERF_TIME"
+  kubectl exec -it -n ${FT_NAMESPACE} $TEST_CLIENT_POD -- $IPERF_CMD -c $TEST_SERVER_IPERF_DST -p $TEST_SERVER_IPERF_DST_PORT -t $IPERF_TIME  > ${IPERF_FILENAME}
 
   # Dump command output
   if [ "$VERBOSE" == true ]; then
@@ -412,6 +414,14 @@ if [ ! -z "$1" ] ; then
     echo "  FT_REQ_SERVER_NODE         - Node to run server pods on. Must be set before launching"
     echo "                               pods. Example:"
     echo "                                 FT_REQ_SERVER_NODE=ovn-worker3 ./launch.sh"
+    echo "  FT_NAMESPACE               - Namespace for all pods, configMaps and services associated with"
+    echo "                               Flow Tester. Defaults to \"default\" namespace. It is best to"
+    echo "                               export this variable because launch.sh and cleanup.sh also need"
+    echo "                               the same value set. Example:"
+    echo "                                 export FT_NAMESPACE=flow-test"
+    echo "                                 ./launch.sh"
+    echo "                                 ./test.sh"
+    echo "                                 ./cleanup.sh"
 
     dump-working-data
   else
@@ -1208,7 +1218,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ] && [ "$FT_HOSTONLY" == false 
     process-curl
     #if [ "$FT_NOTES" == true ]; then
     #  echo "curl SvcName:NODEPORT"
-    #  echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+    #  echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
     #  echo -e "${BLUE}curl: (6) Could not resolve host: ft-http-service-node-v4; Unknown error${NC}"
     #  echo -e "${BLUE}Should this work?${NC}"
     #  echo
@@ -1262,7 +1272,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ]; then
     process-curl
     #if [ "$FT_NOTES" == true ]; then
     #  echo "curl SvcName:NODEPORT"
-    #  echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+    #  echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
     #  echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
     #  echo
     #fi
@@ -1315,7 +1325,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ]; then
     process-curl
     #if [ "$FT_NOTES" == true ]; then
     #  echo "curl SvcName:NODEPORT"
-    #  echo "kubectl exec -it ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+    #  echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
     #  echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
     #  echo
     #fi

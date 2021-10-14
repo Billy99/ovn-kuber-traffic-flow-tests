@@ -17,6 +17,7 @@ test_for_kubectl
 #
 CLEAN_ALL=${CLEAN_ALL:-false}
 FT_HOSTONLY=${FT_HOSTONLY:-unknown}
+FT_NAMESPACE=${FT_NAMESPACE:-default}
 HTTP_SERVER_POD_NAME=${HTTP_SERVER_POD_NAME:-ft-http-server-pod-v4}
 
 dump-working-data() {
@@ -24,6 +25,7 @@ dump-working-data() {
   echo "Default/Override Values:"
   echo "  Launch Control:"
   echo "    FT_HOSTONLY                        $FT_HOSTONLY"
+  echo "    FT_NAMESPACE                       $FT_NAMESPACE"
   echo "    HTTP_SERVER_POD_NAME               $HTTP_SERVER_POD_NAME"
   echo "    CLEAN_ALL                          $CLEAN_ALL"
   echo "    FT_REQ_SERVER_NODE                 $FT_REQ_SERVER_NODE"
@@ -32,7 +34,7 @@ dump-working-data() {
 
 # Try to determine if only host-networked pods were created.
 if [ "$FT_HOSTONLY" == unknown ]; then
-  TEST_HTTP_SERVER=`kubectl get pods | grep -o "$HTTP_SERVER_POD_NAME"`
+  TEST_HTTP_SERVER=`kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_POD_NAME"`
   if [ -z "${TEST_HTTP_SERVER}" ]; then
     FT_HOSTONLY=true
   else
@@ -51,6 +53,14 @@ if [ ! -z "$1" ] ; then
     echo "                               false positives could occur if pods are renamed or server pod"
     echo "                               failed to come up. Example:"
     echo "                                 export FT_HOSTONLY=true"
+    echo "                                 ./launch.sh"
+    echo "                                 ./test.sh"
+    echo "                                 ./cleanup.sh"
+    echo "  FT_NAMESPACE               - Namespace for all pods, configMaps and services associated with"
+    echo "                               Flow Tester. Defaults to \"default\" namespace. It is best to"
+    echo "                               export this variable because test.sh and launch.sh also need"
+    echo "                               the same value set. Example:"
+    echo "                                 export FT_NAMESPACE=flow-test"
     echo "                                 ./launch.sh"
     echo "                                 ./test.sh"
     echo "                                 ./cleanup.sh"
@@ -112,6 +122,10 @@ if [ "$FT_SRIOV_SERVER" == true ] || [ "$FT_SRIOV_CLIENT" == true ]; then
 fi
 
 del_labels
+
+if [ "$FT_NAMESPACE" != default ]; then
+  kubectl delete -f ./manifests/yamls/namespace.yaml
+fi
 
 if [ "$CLEAN_ALL" == true ]; then
   rm -rf manifests/yamls/*.yaml

@@ -15,6 +15,7 @@ This repository contains the yaml files and test scripts to test all the traffic
      - [Pin Remote Client to Given Node](#pin-remote-client-to-given-node)
      - [Limit Test to Only Host-Backed Pods](#limit-test-to-only-host-backed-pods)
      - [Deploy With SR-IOV VFs](#deploy-with-sr-iov-vfs)
+     - [Manage Namespace](#manage-namespace)
      - [Check Variable Settings](#check-variable-settings)
   - [Cleanup Test Pods](#cleanup-test-pods)
   - [Deployment Customization](#deployment-customization)
@@ -223,6 +224,20 @@ kubectl label nodes ovn-worker5 sriov-node=
 export FT_SRIOV_NODE_LABEL=sriov-node"
 export SRIOV_RESOURCE_NAME=sriov_a"
 ./launch.sh
+```
+
+#### Manage Namespace
+
+By default, all objects (pods, daemonsets, services, etc) are created in the
+`default` namespace. This can be overwritten by using the `FT_NAMESPACE` variable.
+`launch.sh`, `test.sh` and `cleanup.sh` all need the same value set, so it is best
+to export this variable when using.
+
+```
+export FT_NAMESPACE=flow-test
+./launch.sh
+./test.sh
+./cleanup.sh
 ```
 
 #### Check Variable Settings

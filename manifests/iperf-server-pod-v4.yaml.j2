@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: ft-iperf-server-pod-v4
+  namespace: {{ namespace }}
   labels:
     pod-name: ft-iperf-server-pod-v4
 spec:
