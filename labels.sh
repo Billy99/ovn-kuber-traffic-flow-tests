@@ -1,23 +1,7 @@
 #!/bin/bash
 
 
-# 
-FT_REQ_SERVER_NODE=${FT_REQ_SERVER_NODE:-all}
-
-FT_SERVER_NODE_LABEL=ft.ServerPod
-FT_CLIENT_NODE_LABEL=ft.ClientPod
-FT_SRIOV_NODE_LABEL=${FT_SRIOV_NODE_LABEL:-network.operator.openshift.io/external-openvswitch}
-
-dump_labels() {
-  echo "  Label Management:"
-  echo "    FT_REQ_SERVER_NODE                 $FT_REQ_SERVER_NODE"
-  echo "    FT_SERVER_NODE_LABEL               $FT_SERVER_NODE_LABEL"
-  echo "    FT_CLIENT_NODE_LABEL               $FT_CLIENT_NODE_LABEL"
-}
-
 add_labels() {
-  dump_labels
-
   local FOUND_SRIOV=false
   local FOUND_NODE=false
 
@@ -64,8 +48,6 @@ add_labels() {
 }
 
 query_labels() {
-  dump_labels
-
   local NODE_ARRAY=($(kubectl get nodes --no-headers=true | awk -F' ' '{print $1}'))
   for i in "${!NODE_ARRAY[@]}"
   do

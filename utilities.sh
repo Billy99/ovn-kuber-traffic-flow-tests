@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 test_for_kubectl() {
   kubectl version  &>/dev/null
 
