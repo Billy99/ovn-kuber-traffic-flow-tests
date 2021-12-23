@@ -2,90 +2,38 @@
 
 shopt -s expand_aliases
 
-# Source the functions in utilities.sh
+# Source the variables and functions in utilities.sh
 . utilities.sh
 
 # Make sure kubectl is installed. Create an alias if not.
 # This needs to be done before other files are sourced.
 test_for_kubectl
 
-# Source the functions in labels.sh
+COMMAND="test"
+
+# Source the functions in other files
+. variables.sh
+. generate-yaml.sh
 . labels.sh
+. multi-cluster.sh
 
-#
-# Default values (possible to override)
-#
-CLEAN_ALL=${CLEAN_ALL:-false}
-FT_HOSTONLY=${FT_HOSTONLY:-unknown}
-FT_NAMESPACE=${FT_NAMESPACE:-default}
-HTTP_SERVER_POD_NAME=${HTTP_SERVER_POD_NAME:-ft-http-server-pod-v4}
+determine-default-data
+process-help $1
 
-dump-working-data() {
-  echo
-  echo "Default/Override Values:"
-  echo "  Launch Control:"
-  echo "    FT_HOSTONLY                        $FT_HOSTONLY"
-  echo "    FT_NAMESPACE                       $FT_NAMESPACE"
-  echo "    HTTP_SERVER_POD_NAME               $HTTP_SERVER_POD_NAME"
-  echo "    CLEAN_ALL                          $CLEAN_ALL"
-  echo "    FT_REQ_SERVER_NODE                 $FT_REQ_SERVER_NODE"
-  echo "    FT_REQ_REMOTE_CLIENT_NODE          $FT_REQ_REMOTE_CLIENT_NODE"
-}
-
-# Try to determine if only host-networked pods were created.
-if [ "$FT_HOSTONLY" == unknown ]; then
-  TEST_HTTP_SERVER=`kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_POD_NAME"`
-  if [ -z "${TEST_HTTP_SERVER}" ]; then
-    FT_HOSTONLY=true
-  else
-    FT_HOSTONLY=false
-  fi
+if [ "$FT_VARS" == true ]; then
+  dump-working-data
 fi
 
-# Test for '--help'
-if [ ! -z "$1" ] ; then
-  if [ "$1" == help ] || [ "$1" == "--help" ] ; then
-    echo
-    echo "This script uses ENV Variables to control test. Here are few key ones:"
-    echo "  FT_HOSTONLY                - Only host network backed pods were launched, off by default."
-    echo "                               Used on DPUs. It is best to export this variable. test.sh and"
-    echo "                               cleanup.sh will try to detect if it was used on launch, but"
-    echo "                               false positives could occur if pods are renamed or server pod"
-    echo "                               failed to come up. Example:"
-    echo "                                 export FT_HOSTONLY=true"
-    echo "                                 ./launch.sh"
-    echo "                                 ./test.sh"
-    echo "                                 ./cleanup.sh"
-    echo "  FT_NAMESPACE               - Namespace for all pods, configMaps and services associated with"
-    echo "                               Flow Tester. Defaults to \"default\" namespace. It is best to"
-    echo "                               export this variable because test.sh and launch.sh also need"
-    echo "                               the same value set. Example:"
-    echo "                                 export FT_NAMESPACE=flow-test"
-    echo "                                 ./launch.sh"
-    echo "                                 ./test.sh"
-    echo "                                 ./cleanup.sh"
-    echo "  CLEAN_ALL                  - Remove all generated files (yamls from j2, iperf logs, and"
-    echo "                               ovn-trace logs). Default is to leave in place. Example:"
-    echo "                                 CLEAN_ALL=true ./cleanup.sh"
-
-    dump-working-data
-    dump_labels
-  else
-    echo
-    echo "Unknown input, try using \"./launch.sh --help\""
-    echo
-  fi
-
-  exit 0
-fi
-
-dump-working-data
 
 # Call query_labels() to set flags so know what to delete
 FT_SRIOV_SERVER=false
 FT_NORMAL_CLIENT=false
 FT_SRIOV_CLIENT=false
 query_labels
+
+if [ "$FT_CLIENTONLY" == true ]; then
+  FT_SRIOV_SERVER=false
+fi
 
 if [ "$FT_HOSTONLY" == false ]; then
   # Delete normal Pods and Service
@@ -96,24 +44,27 @@ if [ "$FT_HOSTONLY" == false ]; then
     kubectl delete -f ./manifests/yamls/client-daemonSet-sriov.yaml
   fi
 
-  if [ "$FT_SRIOV_SERVER" == true ]; then
-    kubectl delete -f ./manifests/yamls/iperf-server-pod-v4-sriov.yaml
-    kubectl delete -f ./manifests/yamls/http-server-pod-v4-sriov.yaml
-  else
-    kubectl delete -f ./manifests/yamls/iperf-server-pod-v4.yaml
-    kubectl delete -f ./manifests/yamls/http-server-pod-v4.yaml
-  fi
+  if [ "$FT_CLIENTONLY" == false ]; then
+    if [ "$FT_SRIOV_SERVER" == true ]; then
+      kubectl delete -f ./manifests/yamls/iperf-server-pod-v4-sriov.yaml
+      kubectl delete -f ./manifests/yamls/http-server-pod-v4-sriov.yaml
+    else
+      kubectl delete -f ./manifests/yamls/iperf-server-pod-v4.yaml
+      kubectl delete -f ./manifests/yamls/http-server-pod-v4.yaml
+    fi
 
-  kubectl delete -f ./manifests/yamls/svc-nodePort.yaml
-  kubectl delete -f ./manifests/yamls/svc-clusterIP.yaml
+    kubectl delete -f ./manifests/yamls/svc-nodePort.yaml
+    kubectl delete -f ./manifests/yamls/svc-clusterIP.yaml
+  fi
 fi
 
-
 # Delete HOST backed Pods and Service
-kubectl delete -f ./manifests/yamls/svc-nodePort-host.yaml
-kubectl delete -f ./manifests/yamls/svc-clusterIP-host.yaml
-kubectl delete -f ./manifests/yamls/iperf-server-pod-v4-host.yaml
-kubectl delete -f ./manifests/yamls/http-server-pod-v4-host.yaml
+if [ "$FT_CLIENTONLY" == false ]; then
+  kubectl delete -f ./manifests/yamls/svc-nodePort-host.yaml
+  kubectl delete -f ./manifests/yamls/svc-clusterIP-host.yaml
+  kubectl delete -f ./manifests/yamls/iperf-server-pod-v4-host.yaml
+  kubectl delete -f ./manifests/yamls/http-server-pod-v4-host.yaml
+fi
 kubectl delete -f ./manifests/yamls/client-daemonSet-host.yaml
 
 

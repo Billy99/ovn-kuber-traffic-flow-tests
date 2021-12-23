@@ -24,6 +24,10 @@ This repository contains the yaml files and test scripts to test all the traffic
   - [iperf3](#iperf3)
   - [ovnkube-trace](#ovnkube-trace)
 - [Container Images](#container-images)
+- [Multi-Cluster](#multi-cluster)
+  - [mclaunch.sh](#mclaunch.sh)
+  - [mctest.sh](#mctest.sh)
+  - [mccleanup.sh](#mccleanuo.sh)
 
 
 ## Different Traffic Flows Tested
@@ -722,3 +726,73 @@ how a packet flows through OVN-Kubernetes for a particular flow.
 
 See [docs/IMAGES.md](docs/IMAGES.md) for details on the container images used in this repo
 and how to rebuild them.
+
+
+## Multi-Cluster
+
+Test scripts have been setup to run in a Multi-Cluster environment. It has only been tested
+with [Submariner](https://github.com/submariner-io) and the clusters themselves need to already
+be running. For Multi-Cluster, Flow-Tester is deployed in one of two modes:
+* `Full Mode:` Normal deployment of Flow-Tester pods and services and all the Flow-Tester
+  Services are exported.  
+* `Client-Only Mode:` Only Client Pods are created, no Server Pods or Services.
+
+For Multi-Cluster, the following scripts have been added:
+* `mclaunch.sh` - Loops through all existing clusters and calls `launch.sh`.
+* `mctest.sh` - Loops through all existing clusters and calls `test.sh`
+* `mccleanup.sh` - Loops through all existing clusters and calls `cleanu.sh`
+
+By default, the basic Flow-Tester deployment is launched in the "default" namespace,
+but can be overwritten using the `FT_NAMESPACE` environment variable. All the new
+Multi-Cluster scripts will use the namespace "flow-test" by default, unless `FT_NAMESPACE`
+is specifically set.
+
+### mclaunch.sh
+
+`mclaunch.sh` - Loops through all existing clusters and calls `launch.sh`, deploying
+Flow-Tester in either `Full Mode`, `Client-Only Mode`, or not at all. By default,
+Flow-Tester is deployed on all the clusters in `Full Mode` except the last cluster,
+which gets deployed in `Client-Only Mode`.
+```
+   ./mclaunch.sh
+```
+
+To control the mode of each cluster, use the following environment variables,
+which each is a list of clusters or the value "all". "all" is the default and
+lets the script perform best effort. When there is an overlap exists, `Full Mode` wins.
+```
+   export FT_FULL_CLUSTERS="cluster1 cluster3"
+   export FT_CO_CLUSTERS="cluster2 cluster4"
+   ./mclaunch.sh
+```
+
+### mctest.sh
+
+`mctest.sh` - Loops through all existing clusters and calls `test.sh` if the cluster is
+in `Client-Only Mode`. The goal of the test is to test the traffic flow from a pod in
+one cluster to a ClusterIP Service in another cluster. Because no Server Pods or
+Services are created in `Client-Only Mode`, only ClusterIP Service and External tests
+will succeed and are all that are run by this script.
+```
+   ./mctest.sh
+```
+
+When using a remote service, the service must be full qualified (exported services use
+`.clusterset.local` whereas local services use `.cluster.local`). Example:
+```
+   <ServiceName>.<Namespace>.svc.clusterset.local
+```
+The `mctest.sh` handles this by default, but if the qualifier needs to changed, or a
+fully qualified Service needs to be tested on a single cluster deployment, the following
+environment variable can to be used to override:
+```
+   FT_SVC_QUALIFIER=".flow-test.svc.cluster.local" ./test.sh
+```
+
+### mctest.sh
+
+`mccleanup.sh` - Loops through all existing clusters and calls `cleanup.sh` on each cluster
+Flow-Tester is deployed on.
+```
+   ./mccleanup.sh
+```
