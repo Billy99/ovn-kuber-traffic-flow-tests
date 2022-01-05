@@ -209,7 +209,7 @@ export FT_HOSTONLY=true"
 
 #### Deploy With SR-IOV VFs
 
-To use Flow-Test with SR-IOV VFs, settings need to be applied before launch.sh. Flow-Test
+To use Flow-Test with SR-IOV VFs, settings need to be applied before *'launch.sh'*. Flow-Test
 needs to know which nodes are running with SR-IOV NICs and needs to know the ResourceName
 used by SR-IOV Device Plugin (Flow-Test does not launch or touch SR-IOV Device Plugin).
 These settings are controlled with the following variables:
@@ -237,7 +237,7 @@ export SRIOV_RESOURCE_NAME=sriov_a"
 
 By default, all objects (pods, daemonsets, services, etc) are created in the
 `default` namespace. This can be overwritten by using the `FT_NAMESPACE` variable.
-`launch.sh`, `test.sh` and `cleanup.sh` all need the same value set, so it is best
+*'launch.sh'*, *'test.sh'* and *'cleanup.sh'* all need the same value set, so it is best
 to export this variable when using.
 
 ```
@@ -373,7 +373,7 @@ cd ~/src/ovn-kuber-traffic-flow-tests/
 ./cleanup.sh
 ```
 
-Several files are generated during test runs. For example, `iper3` output files,
+Several files are generated during test runs. For example, `iperf3` output files,
 `ovn-trace` output files, and Pod and Service deployment YAML files (generated
 using `j2`). All these are described more below. The files are not deleted by
 default. To delete all the generated files, use `CLEAN_ALL`.
@@ -416,7 +416,7 @@ To run all the tests, simply run the script.
 * All the hard-coded values are printed to the screen when `FT_VARS=true`.
   The "Test Control", "OVN Trace Control" and "External Access" variables
   can be overwritten. If any of the "From YAML Files" variables are overwritten,
-  the yaml files must also be updated before `launch.sh` is called.
+  the yaml files must also be updated before *'launch.sh'* is called.
 * Then all the queried values, like Pod Names and IP addresses are printed.
 * Each test is run with actual command executed printed to the screen.
 * <span style="color:green">**SUCCESS**</span> or <span style="color:red">**FAILED**</span> is then printed.
@@ -669,8 +669,8 @@ drwxrwxr-x. 7 user user 4096 Jun 11 15:04 ..
 -rw-rw-r--. 1 user user   71 Jun  9 13:51 .gitignore
 ```
 
-*NOTE:* The `cleanup.sh` script does not remove these files and each subsequent run of
-`test.sh` overwrites the previous test run. They can be removed manually or using
+*NOTE:* The *'cleanup.sh'* script does not remove these files and each subsequent run of
+*'test.sh'* overwrites the previous test run. They can be removed manually or using
 `CLEAN_ALL=true ./cleanup.sh`.
 
 ### ovnkube-trace
@@ -721,8 +721,8 @@ drwxrwxr-x. 7 user user  4096 Jun 11 15:04 ..
 Examine these files to debug why a particular flow isn't working or to better understand
 how a packet flows through OVN-Kubernetes for a particular flow.
 
-*NOTE:* The `cleanup.sh` script does not remove these files and each subsequent run of
-`test.sh` overwrites the previous test run. They can be removed manually or using
+*NOTE:* The *'cleanup.sh'* script does not remove these files and each subsequent run of
+*'test.sh'* overwrites the previous test run. They can be removed manually or using
 `CLEAN_ALL=true ./cleanup.sh`.
 
 ## Container Images
@@ -741,9 +741,9 @@ be running. For Multi-Cluster, Flow-Tester is deployed in one of two modes:
 * `Client-Only Mode:` Only Client Pods are created, no Server Pods or Services.
 
 For Multi-Cluster, the following scripts have been added:
-* `mclaunch.sh` - Loops through all existing clusters and calls `launch.sh`.
-* `mctest.sh` - Loops through all existing clusters and calls `test.sh`
-* `mccleanup.sh` - Loops through all existing clusters and calls `cleanup.sh`
+* *'mclaunch.sh'* - Loops through all existing clusters and calls *'launch.sh'*.
+* *'mctest.sh'* - Loops through all existing clusters and calls *'test.sh'*
+* *'mccleanup.sh'* - Loops through all existing clusters and calls *'cleanup.sh'*
 
 By default, the basic Flow-Tester deployment is launched in the "default" namespace,
 but can be overwritten using the `FT_NAMESPACE` environment variable. All the new
@@ -752,7 +752,7 @@ is specifically set.
 
 ### mclaunch.sh
 
-`mclaunch.sh` - Loops through all existing clusters and calls `launch.sh`, deploying
+*'mclaunch.sh'* - Loops through all existing clusters and calls *'launch.sh'*, deploying
 Flow-Tester in either `Full Mode`, `Client-Only Mode`, or not at all. By default,
 Flow-Tester is deployed on all the clusters in `Full Mode` except the last cluster,
 which gets deployed in `Client-Only Mode`.
@@ -771,7 +771,7 @@ lets the script perform best effort. When an overlap exists, `Full Mode` wins.
 
 ### mctest.sh
 
-`mctest.sh` - Loops through all existing clusters and calls `test.sh` if the cluster is
+*'mctest.sh'* - Loops through all existing clusters and calls *'test.sh'* if the cluster is
 in `Client-Only Mode`. The goal of the test is to test the traffic flow from a pod in
 one cluster to a ClusterIP Service in another cluster. Because no Server Pods or
 Services are created in `Client-Only Mode`, only ClusterIP Service and External tests
@@ -785,7 +785,7 @@ When using a remote service, the service must be full qualified (exported servic
 ```
    <ServiceName>.<Namespace>.svc.clusterset.local
 ```
-The `mctest.sh` handles this by default, but if the qualifier needs to be changed, or a
+The *'mctest.sh'* handles this by default, but if the qualifier needs to be changed, or a
 fully qualified Service needs to be tested on a single cluster deployment, the following
 environment variable can to be used to override:
 ```
@@ -803,7 +803,7 @@ To get the DNS domain suffixes for the fully qualified service names, examine th
 
 ### mccleanup.sh
 
-`mccleanup.sh` - Loops through all existing clusters and calls `cleanup.sh` on each cluster
+*'mccleanup.sh'* - Loops through all existing clusters and calls *'cleanup.sh'* on each cluster
 Flow-Tester is deployed on.
 ```
    ./mccleanup.sh
