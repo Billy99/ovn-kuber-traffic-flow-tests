@@ -78,6 +78,9 @@ This repository contains the yaml files and test scripts to test all the traffic
 1. External Network -> NodePort Service traffic
    * External Network -> NodePort Service traffic (Pod Backend)
    * External Network -> NodePort Service traffic (Host Backend)
+1. Cluster -> Kubernetes API Server
+   * Pod -> Cluster IP Service traffic (Kubernetes API)
+   * Host -> Cluster IP Service traffic (Kubernetes API)
 1. External Network -> Cluster (multiple external GW traffic)
    * **NOTE:** Special Use-Case for customer - Not Implemented
 

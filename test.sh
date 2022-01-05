@@ -85,8 +85,20 @@ process-curl() {
     TMP_OUTPUT=`kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD "http://${TEST_SERVER_HTTP_DST}/"`
   else
     # Default command
-    echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-    TMP_OUTPUT=`kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD "http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/"`
+
+    # If Kubebernetes API, include --cacert and -H TOKEN
+    if [ "${TEST_SERVER_RSP}" == "${KUBEAPI_SERVER_STRING}" ]; then
+      LCL_SERVICEACCOUNT=/var/run/secrets/kubernetes.io/serviceaccount
+
+      echo "LCL_TOKEN=kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- cat ${LCL_SERVICEACCOUNT}/token"
+      LCL_TOKEN=`kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- cat ${LCL_SERVICEACCOUNT}/token`
+
+      echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD --cacert ${LCL_SERVICEACCOUNT}/ca.crt  -H \"Authorization: Bearer LCL_TOKEN\" -X GET \"https://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/api\""
+      TMP_OUTPUT=`kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD --cacert ${LCL_SERVICEACCOUNT}/ca.crt  -H "Authorization: Bearer ${LCL_TOKEN}" -X GET "https://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/api"`
+    else
+      echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+      TMP_OUTPUT=`kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD "http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/"`
+    fi
   fi
 
   # Dump command output
@@ -1243,8 +1255,6 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ] && [ "$FT_CLIENTONLY" == fals
 fi
 
 
-
-
 if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 13 ]; then
   echo
   echo "FLOW 13: Cluster -> External Network"
@@ -1526,10 +1536,108 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 15 ] && [ "$FT_CLIENTONLY" == fals
 fi
 
 
-if [ "$FT_NOTES" == true ]; then
-  if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 16 ] && [ "$FT_CLIENTONLY" == false ] ; then
+if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 16 ] ; then
+  echo
+  echo "FLOW 16: Cluster -> Kubernetes API Server"
+  echo "-----------------------------------------"
+
+  if [ "$FT_HOSTONLY" == false ]; then
     echo
-    echo "FLOW 16: External Network -> Cluster (multiple external GW traffic)"
+    echo "*** 16-a: Pod -> Cluster IP Service traffic (Kubernetes API) ***"
+    echo
+
+    TEST_CLIENT_POD=$LOCAL_CLIENT_POD
+    TEST_FILENAME="16-a-pod2clusterIpSvc-kubernetesApi.txt"
+
+   if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$KUBEAPI_SERVER_STRING
+
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_KUBEAPI_SVC_PORT
+      echo "curl SvcClusterIP:SvcPORT"
+      process-curl
+
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_KUBEAPI_EP_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_KUBEAPI_EP_PORT
+      echo "curl SvcEndPointIP:SvcPORT"
+      process-curl
+
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_KUBEAPI_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_KUBEAPI_SVC_PORT
+      echo "curl SvcName:SvcPORT"
+      process-curl
+    fi
+
+    if [ "$IPERF" == true ]; then
+      if [ "$FT_NOTES" == true ]; then
+        echo -e "${BLUE}iperf Skipped - No iperf client on Kubernetes API Server.${NC}"
+        echo
+        echo "iperf Skipped - No iperf client on Kubernetes API Server." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+      fi
+    fi
+
+    if [ "$OVN_TRACE" == true ]; then 
+      if [ "$FT_NOTES" == true ]; then
+        echo "OVN-TRACE: BEGIN"
+        echo -e "${BLUE}ovn-trace Skipped.${NC}"
+        echo "OVN-TRACE: END"
+        echo
+        echo "ovn-trace Skipped." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+      fi
+    fi
+  fi
+
+
+  echo
+  echo "*** 16-b: Host -> Cluster IP Service traffic (Kubernetes API) ***"
+  echo
+
+  TEST_CLIENT_POD=$LOCAL_CLIENT_HOST_POD
+  TEST_FILENAME="16-b-host2clusterIpSvc-kubernetesApi.txt"
+
+  if [ "$CURL" == true ]; then
+    TEST_SERVER_RSP=$KUBEAPI_SERVER_STRING
+
+    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4
+    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_KUBEAPI_SVC_PORT
+    echo "curl SvcClusterIP:SvcPORT"
+    process-curl
+
+    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_KUBEAPI_EP_IP
+    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_KUBEAPI_EP_PORT
+    echo "curl SvcEndPointIP:SvcPORT"
+    process-curl
+
+    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_KUBEAPI_SVC_NAME
+    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_KUBEAPI_SVC_PORT
+    echo "curl SvcName:SvcPORT"
+    process-curl
+  fi
+
+  if [ "$IPERF" == true ]; then
+    if [ "$FT_NOTES" == true ]; then
+      echo -e "${BLUE}iperf Skipped - No iperf client on Kubernetes API Server.${NC}"
+      echo
+      echo "iperf Skipped - No iperf client on Kubernetes API Server." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+    fi
+  fi
+
+  if [ "$OVN_TRACE" == true ]; then 
+    if [ "$FT_NOTES" == true ]; then
+      echo "OVN-TRACE: BEGIN"
+      echo -e "${BLUE}ovn-trace Skipped.${NC}"
+      echo "OVN-TRACE: END"
+      echo
+      echo "ovn-trace Skipped." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+    fi
+  fi
+fi
+
+
+if [ "$FT_NOTES" == true ]; then
+  if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 17 ] && [ "$FT_CLIENTONLY" == false ] ; then
+    echo
+    echo "FLOW 17: External Network -> Cluster (multiple external GW traffic)"
     echo "-------------------------------------------------------------------"
 
     if [ "$FT_NOTES" == true ]; then
