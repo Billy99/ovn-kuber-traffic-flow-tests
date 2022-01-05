@@ -25,9 +25,9 @@ This repository contains the yaml files and test scripts to test all the traffic
   - [ovnkube-trace](#ovnkube-trace)
 - [Container Images](#container-images)
 - [Multi-Cluster](#multi-cluster)
-  - [mclaunch.sh](#mclaunch.sh)
-  - [mctest.sh](#mctest.sh)
-  - [mccleanup.sh](#mccleanuo.sh)
+  - [mclaunch.sh](#mclaunchsh)
+  - [mctest.sh](#mctestsh)
+  - [mccleanup.sh](#mccleanupsh)
 
 
 ## Different Traffic Flows Tested
@@ -740,7 +740,7 @@ be running. For Multi-Cluster, Flow-Tester is deployed in one of two modes:
 For Multi-Cluster, the following scripts have been added:
 * `mclaunch.sh` - Loops through all existing clusters and calls `launch.sh`.
 * `mctest.sh` - Loops through all existing clusters and calls `test.sh`
-* `mccleanup.sh` - Loops through all existing clusters and calls `cleanu.sh`
+* `mccleanup.sh` - Loops through all existing clusters and calls `cleanup.sh`
 
 By default, the basic Flow-Tester deployment is launched in the "default" namespace,
 but can be overwritten using the `FT_NAMESPACE` environment variable. All the new
@@ -758,8 +758,8 @@ which gets deployed in `Client-Only Mode`.
 ```
 
 To control the mode of each cluster, use the following environment variables,
-which each is a list of clusters or the value "all". "all" is the default and
-lets the script perform best effort. When there is an overlap exists, `Full Mode` wins.
+each of which is a list of clusters or the value "all". "all" is the default and
+lets the script perform best effort. When an overlap exists, `Full Mode` wins.
 ```
    export FT_FULL_CLUSTERS="cluster1 cluster3"
    export FT_CO_CLUSTERS="cluster2 cluster4"
@@ -778,18 +778,27 @@ will succeed and are all that are run by this script.
 ```
 
 When using a remote service, the service must be full qualified (exported services use
-`.clusterset.local` whereas local services use `.cluster.local`). Example:
+`.clusterset.local` whereas local services use `.<ClusterName>.local`). Example:
 ```
    <ServiceName>.<Namespace>.svc.clusterset.local
 ```
-The `mctest.sh` handles this by default, but if the qualifier needs to changed, or a
+The `mctest.sh` handles this by default, but if the qualifier needs to be changed, or a
 fully qualified Service needs to be tested on a single cluster deployment, the following
 environment variable can to be used to override:
 ```
-   FT_SVC_QUALIFIER=".flow-test.svc.cluster.local" ./test.sh
+   FT_SVC_QUALIFIER=".flow-test.svc.cluster1.local" ./test.sh
 ```
 
-### mctest.sh
+To get the DNS domain suffixes for the fully qualified service names, examine the
+`/etc/resolv.conf` of a pod in the cluster:
+```
+   kubectl exec -it -n flow-test ft-client-pod-m9bsr -- cat /etc/resolv.conf
+    search flow-test.svc.cluster1.local svc.cluster1.local cluster1.local
+    nameserver 100.1.0.10
+    options ndots:5
+```
+
+### mccleanup.sh
 
 `mccleanup.sh` - Loops through all existing clusters and calls `cleanup.sh` on each cluster
 Flow-Tester is deployed on.
