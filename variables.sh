@@ -70,6 +70,11 @@ HTTP_NODEPORT_POD_SVC_PORT=${HTTP_NODEPORT_POD_SVC_PORT:-30080}
 HTTP_NODEPORT_HOST_SVC_PORT=${HTTP_NODEPORT_HOST_SVC_PORT:-30081}
 
 
+HTTP_CLUSTERIP_KUBEAPI_SVC_NAME=${HTTP_CLUSTERIP_KUBEAPI_SVC_NAME:-kubernetes.default.svc}
+HTTP_CLUSTERIP_KUBEAPI_SVC_PORT=${HTTP_CLUSTERIP_KUBEAPI_SVC_PORT:-443}
+HTTP_CLUSTERIP_KUBEAPI_EP_PORT=${HTTP_CLUSTERIP_KUBEAPI_EP_PORT:-6443}
+
+
 IPERF_SERVER_POD_NAME=${IPERF_SERVER_POD_NAME:-ft-iperf-server-pod-v4}
 IPERF_SERVER_HOST_POD_NAME=${IPERF_SERVER_HOST_POD_NAME:-ft-iperf-server-host-v4}
 
@@ -89,6 +94,7 @@ IPERF_NODEPORT_HOST_SVC_PORT=${IPERF_NODEPORT_HOST_SVC_PORT:-30202}
 POD_SERVER_STRING=${POD_SERVER_STRING:-"Server - Pod Backend Reached"}
 HOST_SERVER_STRING=${HOST_SERVER_STRING:-"Server - Host Backend Reached"}
 EXTERNAL_SERVER_STRING=${EXTERNAL_SERVER_STRING:-"The document has moved"}
+KUBEAPI_SERVER_STRING=${KUBEAPI_SERVER_STRING:-"serverAddressByClientCIDRs"}
 
 
 # Local Variables not intended to be overwritten
@@ -170,6 +176,7 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    POD_SERVER_STRING                  $POD_SERVER_STRING"
   echo "    HOST_SERVER_STRING                 $HOST_SERVER_STRING"
   echo "    EXTERNAL_SERVER_STRING             $EXTERNAL_SERVER_STRING"
+  echo "    KUBEAPI_SERVER_STRING              $KUBEAPI_SERVER_STRING"
   echo "  External Access:"
   echo "    EXTERNAL_IP                        $EXTERNAL_IP"
   echo "    EXTERNAL_URL                       $EXTERNAL_URL"
@@ -206,6 +213,12 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    IPERF_CLUSTERIP_HOST_SVC_PORT      $IPERF_CLUSTERIP_HOST_SVC_PORT"
   echo "    IPERF_NODEPORT_HOST_SVC_IPV4       $IPERF_NODEPORT_HOST_SVC_IPV4"
   echo "    IPERF_NODEPORT_HOST_SVC_PORT       $IPERF_NODEPORT_HOST_SVC_PORT"
+  echo "  Kubernetes API:"
+  echo "    HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4    $HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4"
+  echo "    HTTP_CLUSTERIP_KUBEAPI_SVC_PORT    $HTTP_CLUSTERIP_KUBEAPI_SVC_PORT"
+  echo "    HTTP_CLUSTERIP_KUBEAPI_EP_IP       $HTTP_CLUSTERIP_KUBEAPI_EP_IP"
+  echo "    HTTP_CLUSTERIP_KUBEAPI_EP_PORT     $HTTP_CLUSTERIP_KUBEAPI_EP_PORT"
+  echo "    HTTP_CLUSTERIP_KUBEAPI_SVC_NAME    $HTTP_CLUSTERIP_KUBEAPI_SVC_NAME"
 fi
   echo
 }
@@ -534,6 +547,12 @@ query-dynamic-data() {
     #IPERF_NODEPORT_HOST_SVC_PORT - Leave set to default instead of querying
   fi
 
+  # Get Kubernetes API Server Data
+  HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4=`kubectl get services --no-headers kubernetes | awk -F' ' '{print $3}'`
+  HTTP_CLUSTERIP_KUBEAPI_SVC_PORT=`kubectl get services --no-headers kubernetes | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
+
+  HTTP_CLUSTERIP_KUBEAPI_EP_IP=`kubectl get endpoints --no-headers kubernetes | awk -F' ' '{print $2}' | awk -F: '{print $1}'`
+  HTTP_CLUSTERIP_KUBEAPI_EP_PORT=`kubectl get endpoints --no-headers kubernetes | awk -F' ' '{print $2}' | awk -F: '{print $2}'`
 
   # If Service Qualifier, update all services
   # This needs to be done after and searches using services.
