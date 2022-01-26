@@ -552,7 +552,7 @@ query-dynamic-data() {
   HTTP_CLUSTERIP_KUBEAPI_SVC_PORT=`kubectl get services --no-headers kubernetes | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
 
   HTTP_CLUSTERIP_KUBEAPI_EP_IP=`kubectl get endpoints --no-headers kubernetes | awk -F' ' '{print $2}' | awk -F: '{print $1}'`
-  HTTP_CLUSTERIP_KUBEAPI_EP_PORT=`kubectl get endpoints --no-headers kubernetes | awk -F' ' '{print $2}' | awk -F: '{print $2}'`
+  HTTP_CLUSTERIP_KUBEAPI_EP_PORT=`kubectl get endpoints --no-headers kubernetes | awk -F' ' '{print $2}' | awk -F: '{print $4}'`
 
   # If Service Qualifier, update all services
   # This needs to be done after and searches using services.
