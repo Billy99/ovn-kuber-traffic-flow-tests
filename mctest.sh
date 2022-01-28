@@ -17,6 +17,7 @@ FT_NAMESPACE=${FT_NAMESPACE:-flow-test}
 FT_SVC_QUALIFIER=${FT_SVC_QUALIFIER:-".${FT_NAMESPACE}.svc.clusterset.local"}
 HTTP_SERVER_HOST_POD_NAME=${HTTP_SERVER_HOST_POD_NAME:-ft-http-server-host-v4}
 
+ORIG_CONTEXT=$(kubectl config current-context)
 
 # Retrieve all the managed clusters
 CLUSTER_ARRAY=($(kubectl config get-contexts --no-headers=true | awk -F' ' '{print $3}'))
@@ -42,3 +43,5 @@ do
       echo "  Flow-Test not deployed on Cluster ${CLUSTER_ARRAY[$i]}"
     fi
 done
+
+kubectl config use-context ${ORIG_CONTEXT}
