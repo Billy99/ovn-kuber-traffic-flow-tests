@@ -15,6 +15,7 @@ FT_NAMESPACE=${FT_NAMESPACE:-default}
 FT_CLIENTONLY=${FT_CLIENTONLY:-unknown}
 FT_EXPORT_SVC=${FT_EXPORT_SVC:-false}
 FT_SVC_QUALIFIER=${FT_SVC_QUALIFIER:-}
+FT_MC_NAMESPACE=${FT_MC_NAMESPACE:-submariner-operator}
 
 
 # Launch specific variables
@@ -139,6 +140,7 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    OVN_TRACE                          $OVN_TRACE"
   echo "    OVN_TRACE_CMD                      $OVN_TRACE_CMD"
   echo "    FT_SVC_QUALIFIER                   $FT_SVC_QUALIFIER"
+  echo "    FT_MC_NAMESPACE                    $FT_MC_NAMESPACE"
   echo "  OVN Trace Control:"
   echo "    OVN_K_NAMESPACE                    $OVN_K_NAMESPACE"
   echo "    SSL_ENABLE                         $SSL_ENABLE"
@@ -332,10 +334,10 @@ determine-default-data() {
       FT_HOSTONLY=false
     else
       # Look for Server pod, in Host Only it shouldn't be there
-      TEST_HTTP_SERVER=`kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_POD_NAME"`
+      TEST_HTTP_SERVER=$(kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_POD_NAME")
       if [ -z "${TEST_HTTP_SERVER}" ]; then
         # Server pod isn't there for Client Only either, so check Host Backed Server pod, it should be there
-        TEST_HTTP_HOST_SERVER=`kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_HOST_POD_NAME"`
+        TEST_HTTP_HOST_SERVER=$(kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_HOST_POD_NAME")
         if [ -n "${TEST_HTTP_HOST_SERVER}" ]; then
           FT_HOSTONLY=true
         else
@@ -353,7 +355,7 @@ determine-default-data() {
       FT_CLIENTONLY=false
     else
       # Look for Host backer Server pod, in Client Only it shouldn't be there
-      TEST_HTTP_SERVER=`kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_HOST_POD_NAME"`
+      TEST_HTTP_SERVER=$(kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_HOST_POD_NAME")
       if [ -z "${TEST_HTTP_SERVER}" ]; then
         FT_CLIENTONLY=true
       else
@@ -375,7 +377,7 @@ query-dynamic-data() {
   # Determine Local and Remote Nodes
   #
   if [ "$FT_CLIENTONLY" == false ] ; then
-    SERVER_POD_NODE=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $7}'`
+    SERVER_POD_NODE=$(kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $7}')
   else
   	# In Client Only, there are no Server Nodes, so leave blank and logic below
   	# will pick the first non-Master. 
@@ -425,12 +427,12 @@ query-dynamic-data() {
   #
   # Determine Local and Remote Pods
   #
-  LOCAL_CLIENT_HOST_POD=`kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
-  REMOTE_CLIENT_HOST_POD=`kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
+  LOCAL_CLIENT_HOST_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}')
+  REMOTE_CLIENT_HOST_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}')
 
   if [ "$FT_HOSTONLY" == false ]; then
-    LOCAL_CLIENT_POD=`kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}'`
-    REMOTE_CLIENT_POD=`kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide| grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}'`
+    LOCAL_CLIENT_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}')
+    REMOTE_CLIENT_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide| grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}')
   else
     LOCAL_CLIENT_POD=
     REMOTE_CLIENT_POD=
@@ -440,36 +442,39 @@ query-dynamic-data() {
   # Determine IP Addresses and Ports
   #
   if [ "$FT_CLIENTONLY" == false ] ; then
-    HTTP_SERVER_HOST_IP=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
-    IPERF_SERVER_HOST_IP=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $IPERF_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}'`
+    TMP_GET_PODS_STR=$(kubectl get pods -n ${FT_NAMESPACE} -o wide)
+    TMP_GET_SERVICES_STR=$(kubectl get services -n ${FT_NAMESPACE})
 
-    HTTP_CLUSTERIP_HOST_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-    HTTP_CLUSTERIP_HOST_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
+    HTTP_SERVER_HOST_IP=$(echo "${TMP_GET_PODS_STR}" | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}')
+    IPERF_SERVER_HOST_IP=$(echo "${TMP_GET_PODS_STR}" | grep $IPERF_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}')
 
-    HTTP_NODEPORT_HOST_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-    HTTP_NODEPORT_HOST_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
+    HTTP_CLUSTERIP_HOST_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}')
+    HTTP_CLUSTERIP_HOST_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}')
 
-    IPERF_CLUSTERIP_HOST_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-    IPERF_CLUSTERIP_HOST_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}'`
+    HTTP_NODEPORT_HOST_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}')
+    HTTP_NODEPORT_HOST_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}')
 
-    IPERF_NODEPORT_HOST_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'`
-    IPERF_NODEPORT_HOST_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
+    IPERF_CLUSTERIP_HOST_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}')
+    IPERF_CLUSTERIP_HOST_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}')
+
+    IPERF_NODEPORT_HOST_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}')
+    IPERF_NODEPORT_HOST_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}')
 
     if [ "$FT_HOSTONLY" == false ]; then
-      HTTP_SERVER_POD_IP=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $HTTP_SERVER_POD_NAME  | awk -F' ' '{print $6}'`
-      IPERF_SERVER_POD_IP=`kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $IPERF_SERVER_POD_NAME  | awk -F' ' '{print $6}'`
+      HTTP_SERVER_POD_IP=$(echo "${TMP_GET_PODS_STR}" | grep $HTTP_SERVER_POD_NAME  | awk -F' ' '{print $6}')
+      IPERF_SERVER_POD_IP=$(echo "${TMP_GET_PODS_STR}" | grep $IPERF_SERVER_POD_NAME  | awk -F' ' '{print $6}')
 
-      HTTP_CLUSTERIP_POD_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'`
-      HTTP_CLUSTERIP_POD_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
+      HTTP_CLUSTERIP_POD_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}')
+      HTTP_CLUSTERIP_POD_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}')
 
-      HTTP_NODEPORT_POD_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $3}'`
-      HTTP_NODEPORT_POD_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
+      HTTP_NODEPORT_POD_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $3}')
+      HTTP_NODEPORT_POD_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}')
 
-      IPERF_CLUSTERIP_POD_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'`
-      IPERF_CLUSTERIP_POD_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}'`
+      IPERF_CLUSTERIP_POD_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}')
+      IPERF_CLUSTERIP_POD_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}')
 
-      IPERF_NODEPORT_POD_SVC_IPV4=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $3}'`
-      IPERF_NODEPORT_POD_SVC_PORT=`kubectl get services -n ${FT_NAMESPACE} | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}'`
+      IPERF_NODEPORT_POD_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $3}')
+      IPERF_NODEPORT_POD_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}')
     else
       HTTP_SERVER_POD_IP=
       IPERF_SERVER_POD_IP=
@@ -493,39 +498,65 @@ query-dynamic-data() {
 
     # Client Only is true, so no Server Pods and Services are imported.
     #
-    # $ kubectl get serviceimports -A
-    # NAMESPACE             NAME                                                    TYPE           IP                 AGE
-    # submariner-operator   ft-http-service-clusterip-host-v4-flow-test-cluster1    ClusterSetIP   ["100.1.68.196"]   46h
-    # submariner-operator   ft-http-service-clusterip-pod-v4-flow-test-cluster1     ClusterSetIP   ["100.1.18.136"]   46h
-    # submariner-operator   ft-iperf-service-clusterip-host-v4-flow-test-cluster1   ClusterSetIP   ["100.1.31.34"]    46h
-    # submariner-operator   ft-iperf-service-clusterip-pod-v4-flow-test-cluster1    ClusterSetIP   ["100.1.39.167"]   46h
+    # $ kubectl get serviceimports --no-headers=true -n submariner-operator
+    # ft-http-service-clusterip-host-v4-flow-test-cluster1    ClusterSetIP   ["100.1.95.195"]    20h
+    # ft-http-service-clusterip-host-v4-flow-test-cluster3    ClusterSetIP   ["100.3.250.32"]    20h
+    # ft-http-service-clusterip-pod-v4-flow-test-cluster1     ClusterSetIP   ["100.1.106.17"]    20h
+    # ft-http-service-clusterip-pod-v4-flow-test-cluster3     ClusterSetIP   ["100.3.52.117"]    20h
+    # ft-iperf-service-clusterip-host-v4-flow-test-cluster1   ClusterSetIP   ["100.1.194.210"]   20h
+    # ft-iperf-service-clusterip-host-v4-flow-test-cluster3   ClusterSetIP   ["100.3.115.202"]   20h
+    # ft-iperf-service-clusterip-pod-v4-flow-test-cluster1    ClusterSetIP   ["100.1.8.236"]     20h
+    # ft-iperf-service-clusterip-pod-v4-flow-test-cluster3    ClusterSetIP   ["100.3.147.75"]    20h
     #
     # TMP_SVC_NAME
     #   grep for the SVC_NAME (sub-string),
-    #   use awk to tokenize row delimiting on 2 spaces and retrieve full NAME,
+    #   use awk to tokenize row delimiting on space and retrieve full NAME,
     # IP Address
     #   grep for the TMP_SVC_NAME,
-    #   use awk to tokenize row delimiting on 2 spaces and retrieve IP Token,
+    #   use awk to tokenize row delimiting on space and retrieve IP Token,
     #   use awk to tokenize IP string delimiting on " and getting IP Address without [""]
-    MC_NAMESPACE=${MC_NAMESPACE:-submariner-operator}
 
-    TMP_SVC_NAME=`kubectl get serviceimports --no-headers=true -n ${MC_NAMESPACE} | grep ${HTTP_CLUSTERIP_HOST_SVC_NAME} | awk -F' ' '{print $1}'`
-    HTTP_CLUSTERIP_HOST_SVC_IPV4=`kubectl get serviceimports --no-headers=true -n ${MC_NAMESPACE} | grep ${TMP_SVC_NAME} | awk -F' ' '{print $3}' | awk -F\" '{print $2}'`
-    HTTP_CLUSTERIP_HOST_SVC_PORT=`kubectl describe serviceimports -n ${MC_NAMESPACE} ${TMP_SVC_NAME} | grep "Port:" | awk -F' ' '{print $2}'`
+    TMP_SVC_IMPORTS=$(kubectl get serviceimports --no-headers=true -n ${FT_MC_NAMESPACE})
+    if [[ ! -z "$TMP_SVC_IMPORTS" ]] ; then
+      # There can be multiple Clusters to send to. Initially just sending to the first one found.
+      # i.e.: Using ${TMP_SVC_NAME_LIST[0]} instead of looping through each service name.
+      # Later, add support for sending to all of them. Sample code for pulling out Cluster Name:
+      #for i in "${!TMP_SVC_NAME_LIST[@]}"
+      #do
+      #  CLUSTER_NAME=${TMP_SVC_NAME_LIST[i]#"${HTTP_CLUSTERIP_HOST_SVC_NAME}-${FT_NAMESPACE}-"}
+      #done 
 
-    TMP_SVC_NAME=`kubectl get serviceimports --no-headers=true -n ${MC_NAMESPACE} | grep ${IPERF_CLUSTERIP_HOST_SVC_NAME} | awk -F' ' '{print $1}'`
-    IPERF_CLUSTERIP_HOST_SVC_IPV4=`kubectl get serviceimports --no-headers=true -n ${MC_NAMESPACE} | grep ${TMP_SVC_NAME} | awk -F' ' '{print $3}' | awk -F\" '{print $2}'`
-    IPERF_CLUSTERIP_HOST_SVC_PORT=`kubectl describe serviceimports -n ${MC_NAMESPACE} ${TMP_SVC_NAME} | grep "Port:" | awk -F' ' '{print $2}'`
+      TMP_SVC_NAME_LIST=( $(echo "${TMP_SVC_IMPORTS}" | grep ${HTTP_CLUSTERIP_HOST_SVC_NAME} | awk -F' ' '{print $1}') )
+      HTTP_CLUSTERIP_HOST_SVC_IPV4=$(echo "${TMP_SVC_IMPORTS}" | grep ${TMP_SVC_NAME_LIST[0]} | awk -F' ' '{print $3}' | awk -F\" '{print $2}')
+      HTTP_CLUSTERIP_HOST_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${TMP_SVC_NAME_LIST[0]})
 
-    if [ "$FT_HOSTONLY" == false ]; then
-      TMP_SVC_NAME=`kubectl get serviceimports --no-headers=true -n ${MC_NAMESPACE} | grep ${HTTP_CLUSTERIP_POD_SVC_NAME} | awk -F' ' '{print $1}'`
-      HTTP_CLUSTERIP_POD_SVC_IPV4=`kubectl get serviceimports --no-headers=true -n ${MC_NAMESPACE}  | grep ${TMP_SVC_NAME} | awk -F' ' '{print $3}' | awk -F\" '{print $2}'`
-      HTTP_CLUSTERIP_POD_SVC_PORT=`kubectl describe serviceimports -n ${MC_NAMESPACE} ${TMP_SVC_NAME} | grep "Port:" | awk -F' ' '{print $2}'`
+      TMP_SVC_NAME_LIST=( $(echo "${TMP_SVC_IMPORTS}" | grep ${IPERF_CLUSTERIP_HOST_SVC_NAME} | awk -F' ' '{print $1}') )
+      IPERF_CLUSTERIP_HOST_SVC_IPV4=$(echo "${TMP_SVC_IMPORTS}" | grep ${TMP_SVC_NAME_LIST[0]} | awk -F' ' '{print $3}' | awk -F\" '{print $2}')
+      IPERF_CLUSTERIP_HOST_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${TMP_SVC_NAME_LIST[0]})
 
-      TMP_SVC_NAME=`kubectl get serviceimports --no-headers=true -n ${MC_NAMESPACE} | grep ${IPERF_CLUSTERIP_POD_SVC_NAME} | awk -F' ' '{print $1}'`
-      IPERF_CLUSTERIP_POD_SVC_IPV4=`kubectl get serviceimports --no-headers=true -n ${MC_NAMESPACE} | grep ${TMP_SVC_NAME} | awk -F' ' '{print $3}' | awk -F\" '{print $2}'`
-      IPERF_CLUSTERIP_POD_SVC_PORT=`kubectl describe serviceimports -n ${MC_NAMESPACE} ${TMP_SVC_NAME} | grep "Port:" | awk -F' ' '{print $2}'`
+      if [ "$FT_HOSTONLY" == false ]; then
+        TMP_SVC_NAME_LIST=( $(echo "${TMP_SVC_IMPORTS}" | grep ${HTTP_CLUSTERIP_POD_SVC_NAME} | awk -F' ' '{print $1}') )
+        HTTP_CLUSTERIP_POD_SVC_IPV4=$(echo "${TMP_SVC_IMPORTS}" | grep ${TMP_SVC_NAME_LIST[0]} | awk -F' ' '{print $3}' | awk -F\" '{print $2}')
+        HTTP_CLUSTERIP_POD_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${TMP_SVC_NAME_LIST[0]})
+
+        TMP_SVC_NAME_LIST=( $(echo "${TMP_SVC_IMPORTS}" | grep ${IPERF_CLUSTERIP_POD_SVC_NAME} | awk -F' ' '{print $1}') )
+        IPERF_CLUSTERIP_POD_SVC_IPV4=$(echo "${TMP_SVC_IMPORTS}" | grep ${TMP_SVC_NAME_LIST[0]} | awk -F' ' '{print $3}' | awk -F\" '{print $2}')
+        IPERF_CLUSTERIP_POD_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${TMP_SVC_NAME_LIST[0]})
+      else
+        HTTP_CLUSTERIP_POD_SVC_IPV4=
+        #HTTP_CLUSTERIP_POD_SVC_PORT - Leave set to default instead of querying
+
+        IPERF_CLUSTERIP_POD_SVC_IPV4=
+        #IPERF_CLUSTERIP_POD_SVC_PORT - Leave set to default instead of querying
+      fi
     else
+      echo "NO ServiceImports Detected"
+      HTTP_CLUSTERIP_HOST_SVC_IPV4=
+      #HTTP_CLUSTERIP_HOST_SVC_PORT - Leave set to default instead of querying
+
+      IPERF_CLUSTERIP_HOST_SVC_IPV4=
+      #IPERF_CLUSTERIP_HOST_SVC_PORT - Leave set to default instead of querying
+
       HTTP_CLUSTERIP_POD_SVC_IPV4=
       #HTTP_CLUSTERIP_POD_SVC_PORT - Leave set to default instead of querying
 
@@ -548,11 +579,16 @@ query-dynamic-data() {
   fi
 
   # Get Kubernetes API Server Data
-  HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4=`kubectl get services --no-headers kubernetes | awk -F' ' '{print $3}'`
-  HTTP_CLUSTERIP_KUBEAPI_SVC_PORT=`kubectl get services --no-headers kubernetes | awk -F' ' '{print $5}' | awk -F/ '{print $1}'`
+  TMP_STR=$(kubectl get services --no-headers kubernetes)
+  HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4=$(echo "${TMP_STR}" | awk -F' ' '{print $3}')
+  HTTP_CLUSTERIP_KUBEAPI_SVC_PORT=$(echo "${TMP_STR}" | awk -F' ' '{print $5}' | awk -F/ '{print $1}')
 
-  HTTP_CLUSTERIP_KUBEAPI_EP_IP=`kubectl get endpoints --no-headers kubernetes | awk -F' ' '{print $2}' | awk -F: '{print $1}'`
-  HTTP_CLUSTERIP_KUBEAPI_EP_PORT=`kubectl get endpoints --no-headers kubernetes | awk -F' ' '{print $2}' | awk -F: '{print $2}'`
+  # Returns something like:
+  #   "kubernetes 192.168.111.20:6443,192.168.111.21:6443,192.168.111.22:6443 7d11h"
+  # Pull pull the IP and Port from the first entry
+  TMP_STR=$(kubectl get endpoints --no-headers kubernetes | awk -F' ' '{print $2}' | awk -F',' '{print $1}')
+  HTTP_CLUSTERIP_KUBEAPI_EP_IP=$(echo "${TMP_STR}" | awk -F: '{print $1}')
+  HTTP_CLUSTERIP_KUBEAPI_EP_PORT=$(echo "${TMP_STR}" | awk -F: '{print $2}')
 
   # If Service Qualifier, update all services
   # This needs to be done after and searches using services.
