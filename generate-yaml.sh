@@ -68,11 +68,15 @@ generate_yamls() {
 
   # http-server-pod-v4-host.yaml
   namespace=${FT_NAMESPACE} \
+  test_image=${TEST_IMAGE} \
+  server_path=${SERVER_PATH} \
   http_clusterip_host_svc_port=${HTTP_CLUSTERIP_HOST_SVC_PORT} \
   j2 "./manifests/http-server-pod-v4-host.yaml.j2" -o "./manifests/yamls/http-server-pod-v4-host.yaml"
 
   # http-server-pod-v4-sriov
   namespace=${FT_NAMESPACE} \
+  test_image=${TEST_IMAGE} \
+  server_path=${SERVER_PATH} \
   net_attach_def_name=${NET_ATTACH_DEF_NAME} \
   sriov_resource_name=${SRIOV_RESOURCE_NAME} \
   http_clusterip_pod_svc_port=${HTTP_CLUSTERIP_POD_SVC_PORT} \
@@ -80,6 +84,8 @@ generate_yamls() {
 
   # http-server-pod-v4.yaml
   namespace=${FT_NAMESPACE} \
+  test_image=${TEST_IMAGE} \
+  server_path=${SERVER_PATH} \
   http_clusterip_pod_svc_port=${HTTP_CLUSTERIP_POD_SVC_PORT} \
   j2 "./manifests/http-server-pod-v4.yaml.j2" -o "./manifests/yamls/http-server-pod-v4.yaml"
 

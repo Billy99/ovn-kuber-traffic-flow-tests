@@ -21,3 +21,6 @@ spec:
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN","NET_RAW"]

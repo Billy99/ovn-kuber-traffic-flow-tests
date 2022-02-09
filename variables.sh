@@ -21,7 +21,7 @@ FT_MC_NAMESPACE=${FT_MC_NAMESPACE:-submariner-operator}
 # Launch specific variables
 NET_ATTACH_DEF_NAME=${NET_ATTACH_DEF_NAME:-ftnetattach}
 SRIOV_RESOURCE_NAME=${SRIOV_RESOURCE_NAME:-openshift.io/mlnx_bf}
-TEST_IMAGE=${TEST_IMAGE:-quay.io/billy99/ft-base-image:0.7}
+TEST_IMAGE=${TEST_IMAGE:-quay.io/billy99/ft-base-image:agn-3}
 
 
 # Clean specific variables
@@ -92,6 +92,7 @@ IPERF_NODEPORT_POD_SVC_PORT=${IPERF_NODEPORT_POD_SVC_PORT:-30201}
 IPERF_NODEPORT_HOST_SVC_PORT=${IPERF_NODEPORT_HOST_SVC_PORT:-30202}
 
 
+SERVER_PATH=${SERVER_PATH:-"/etc/httpserver/"}
 POD_SERVER_STRING=${POD_SERVER_STRING:-"Server - Pod Backend Reached"}
 HOST_SERVER_STRING=${HOST_SERVER_STRING:-"Server - Host Backend Reached"}
 EXTERNAL_SERVER_STRING=${EXTERNAL_SERVER_STRING:-"The document has moved"}
@@ -175,6 +176,7 @@ if [ ${COMMAND} == "launch" ] || [ ${COMMAND} == "test" ] ; then
   echo "      IPERF_NODEPORT_HOST_SVC_PORT     $IPERF_NODEPORT_HOST_SVC_PORT"
 fi
 if [ ${COMMAND} == "test" ] ; then
+  echo "    SERVER_PATH                        $SERVER_PATH"
   echo "    POD_SERVER_STRING                  $POD_SERVER_STRING"
   echo "    HOST_SERVER_STRING                 $HOST_SERVER_STRING"
   echo "    EXTERNAL_SERVER_STRING             $EXTERNAL_SERVER_STRING"

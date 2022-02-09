@@ -26,15 +26,15 @@ metadata:
 spec:
   containers:
   - name: ft-http-server-node-v4
-    image: registry.access.redhat.com/ubi8/python-38
+    image: {{ test_image }}
     volumeMounts:
     - name: ft-http-server-index
-      mountPath: /etc/httpserver/index.html
+      mountPath: {{ server_path }}index.html
       subPath: index.html
       readOnly: true
     command:
-      - "python"
-    args: ["-m", "http.server", "{{ http_clusterip_pod_svc_port }}", "--directory", "/etc/httpserver/"]
+      - "/agnhost"
+    args: ["test-webserver", "--port", "{{ http_clusterip_pod_svc_port }}"]
     imagePullPolicy: IfNotPresent
   nodeSelector:
     ft.ServerPod: server
