@@ -16,6 +16,7 @@ FT_CLIENTONLY=${FT_CLIENTONLY:-unknown}
 FT_EXPORT_SVC=${FT_EXPORT_SVC:-false}
 FT_SVC_QUALIFIER=${FT_SVC_QUALIFIER:-}
 FT_MC_NAMESPACE=${FT_MC_NAMESPACE:-submariner-operator}
+FT_MC_CO_SERVER_LABEL=${FT_MC_CO_SERVER_LABEL:-submariner.io/gateway=true}
 
 
 # Launch specific variables
@@ -142,6 +143,7 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    OVN_TRACE_CMD                      $OVN_TRACE_CMD"
   echo "    FT_SVC_QUALIFIER                   $FT_SVC_QUALIFIER"
   echo "    FT_MC_NAMESPACE                    $FT_MC_NAMESPACE"
+  echo "    FT_MC_CO_SERVER_LABEL              $FT_MC_CO_SERVER_LABEL"
   echo "  OVN Trace Control:"
   echo "    OVN_K_NAMESPACE                    $OVN_K_NAMESPACE"
   echo "    SSL_ENABLE                         $SSL_ENABLE"
