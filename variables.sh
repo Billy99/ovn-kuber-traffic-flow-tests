@@ -4,7 +4,7 @@
 # Default values (possible to override)
 #
 
-FT_REQ_REMOTE_CLIENT_NODE=${FT_REQ_REMOTE_CLIENT_NODE:-all}
+FT_REQ_REMOTE_CLIENT_NODE=${FT_REQ_REMOTE_CLIENT_NODE:-first}
 FT_REQ_SERVER_NODE=${FT_REQ_SERVER_NODE:-all}
 FT_SRIOV_NODE_LABEL=${FT_SRIOV_NODE_LABEL:-network.operator.openshift.io/external-openvswitch}
 
@@ -103,8 +103,10 @@ KUBEAPI_SERVER_STRING=${KUBEAPI_SERVER_STRING:-"serverAddressByClientCIDRs"}
 # Local Variables not intended to be overwritten
 LOCAL_CLIENT_NODE=
 LOCAL_CLIENT_POD=
-REMOTE_CLIENT_NODE=
-REMOTE_CLIENT_POD=
+LOCAL_CLIENT_HOST_POD=
+REMOTE_CLIENT_NODE_LIST=()
+REMOTE_CLIENT_POD_LIST=()
+REMOTE_CLIENT_HOST_POD_LIST=()
 
 FT_SERVER_NODE_LABEL=ft.ServerPod
 FT_CLIENT_NODE_LABEL=ft.ClientPod
@@ -193,8 +195,8 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    SERVER_POD_NODE                    $SERVER_POD_NODE"
   echo "    LOCAL_CLIENT_NODE                  $LOCAL_CLIENT_NODE"
   echo "    LOCAL_CLIENT_POD                   $LOCAL_CLIENT_POD"
-  echo "    REMOTE_CLIENT_NODE                 $REMOTE_CLIENT_NODE"
-  echo "    REMOTE_CLIENT_POD                  $REMOTE_CLIENT_POD"
+  echo "    REMOTE_CLIENT_NODE_LIST            $REMOTE_CLIENT_NODE_LIST"
+  echo "    REMOTE_CLIENT_POD_LIST             $REMOTE_CLIENT_POD_LIST"
   echo "    HTTP_CLUSTERIP_POD_SVC_IPV4        $HTTP_CLUSTERIP_POD_SVC_IPV4"
   echo "    HTTP_CLUSTERIP_POD_SVC_PORT        $HTTP_CLUSTERIP_POD_SVC_PORT"
   echo "    HTTP_NODEPORT_POD_SVC_IPV4         $HTTP_NODEPORT_POD_SVC_IPV4"
@@ -209,8 +211,8 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    SERVER_HOST_NODE                   $SERVER_POD_NODE"
   echo "    LOCAL_CLIENT_HOST_NODE             $LOCAL_CLIENT_NODE"
   echo "    LOCAL_CLIENT_HOST_POD              $LOCAL_CLIENT_HOST_POD"
-  echo "    REMOTE_CLIENT_HOST_NODE            $REMOTE_CLIENT_NODE"
-  echo "    REMOTE_CLIENT_HOST_POD             $REMOTE_CLIENT_HOST_POD"
+  echo "    REMOTE_CLIENT_HOST_NODE_LIST       $REMOTE_CLIENT_NODE_LIST"
+  echo "    REMOTE_CLIENT_HOST_POD_LIST        $REMOTE_CLIENT_HOST_POD_LIST"
   echo "    HTTP_CLUSTERIP_HOST_SVC_IPV4       $HTTP_CLUSTERIP_HOST_SVC_IPV4"
   echo "    HTTP_CLUSTERIP_HOST_SVC_PORT       $HTTP_CLUSTERIP_HOST_SVC_PORT"
   echo "    HTTP_NODEPORT_HOST_SVC_IPV4        $HTTP_NODEPORT_HOST_SVC_IPV4"
@@ -390,57 +392,91 @@ query-dynamic-data() {
 
   # Local Client Node is the same Node Server is running on.
   LOCAL_CLIENT_NODE=$SERVER_POD_NODE
-  # Initialize to the Local Client Node and over write below.
-  REMOTE_CLIENT_NODE=$LOCAL_CLIENT_NODE
 
   # Find the REMOTE NODE for POD and HOST POD. (REMOTE is a node server is NOT running on)
+  echo "Determine Local and Remote Nodes:"
   NODE_ARRAY=($(kubectl get nodes --no-headers=true | awk -F' ' '{print $1}'))
-  for i in "${!NODE_ARRAY[@]}"
+  for NODE in "${NODE_ARRAY[@]}"
   do
+    echo "Processing NODE=${NODE}"
     # Check for non-master (KIND clusters don't have "worker" role set)
-    kubectl get node ${NODE_ARRAY[$i]} --no-headers=true | awk -F' ' '{print $3}' | grep -q master
+    kubectl get node ${NODE} --no-headers=true | awk -F' ' '{print $3}' | grep -q master
     if [ "$?" == 1 ]; then
       # If this node was requested and LOCAL_CLIENT_NODE is blank (because Client Only Mode
       # and there is no Server Node, which is the default), then use this node as Local Client.
-      if [ "$FT_REQ_SERVER_NODE" == "${NODE_ARRAY[$i]}" ] && [ -z "${LOCAL_CLIENT_NODE}" ] ; then
-        LOCAL_CLIENT_NODE=${NODE_ARRAY[$i]}
-      # If this node was requested and REMOTE_CLIENT_NODE is blank (because Client Only Mode
+      if [ "$FT_REQ_SERVER_NODE" == "${NODE}" ] && [ -z "${LOCAL_CLIENT_NODE}" ] ; then
+        LOCAL_CLIENT_NODE=${NODE}
+        echo "LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE} because node requested"
+      # If this node was requested and REMOTE_CLIENT_NODE_LIST is blank (because Client Only Mode
       # and there is no Server Node, which is the default), then use this node as Remote Client.
-      elif [ "$FT_REQ_REMOTE_CLIENT_NODE" == "${NODE_ARRAY[$i]}" ] && [ -z "${REMOTE_CLIENT_NODE}" ] ; then
-        REMOTE_CLIENT_NODE=${NODE_ARRAY[$i]}
+      elif [ "$FT_REQ_REMOTE_CLIENT_NODE" == "${NODE}" ] && [ -z "${REMOTE_CLIENT_NODE_LIST}" ] ; then
+        REMOTE_CLIENT_NODE_LIST+=(${NODE})
+        echo "REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because node requested"
       # If LOCAL_CLIENT_NODE is blank (because Client Only Mode and there is no Server Node,
       # which is the default), then use this node as Local Client.
       elif [ -z "${LOCAL_CLIENT_NODE}" ] ; then
-        LOCAL_CLIENT_NODE=${NODE_ARRAY[$i]}
-      # Otherwise if this was the requested Remote Client, make sure it doesn't overlap with Server Node.
-      elif [ "$FT_REQ_REMOTE_CLIENT_NODE" == all ] || [ "$FT_REQ_REMOTE_CLIENT_NODE" == "${NODE_ARRAY[$i]}" ]; then
-        if [ "$LOCAL_CLIENT_NODE" != "${NODE_ARRAY[$i]}" ]; then
-          REMOTE_CLIENT_NODE=${NODE_ARRAY[$i]}
+        LOCAL_CLIENT_NODE=${NODE}
+        echo "LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE} because next available"
+      # Otherwise if this was the requested Remote Client or the first node requested,
+      # and make sure it doesn't overlap with Server Node.
+      elif [ ${#REMOTE_CLIENT_NODE_LIST[@]} -eq 0 ] && [ "$FT_REQ_REMOTE_CLIENT_NODE" == "first" ] || [ "$FT_REQ_REMOTE_CLIENT_NODE" == "${NODE}" ]; then
+        if [ "$LOCAL_CLIENT_NODE" != "${NODE}" ]; then
+          REMOTE_CLIENT_NODE_LIST=(${NODE})
+          echo "REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because next available and first or specific requested"
+        fi
+      # Otherwise if all was requested, and make sure it doesn't overlap with Server Node.
+      elif [ "$FT_REQ_REMOTE_CLIENT_NODE" == "all" ]; then
+        if [ "$LOCAL_CLIENT_NODE" != "${NODE}" ]; then
+          REMOTE_CLIENT_NODE_LIST+=(${NODE})
+          echo "REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because all requested"
         fi
       fi
     fi
+    echo
   done
-  if [ "$REMOTE_CLIENT_NODE" == "$LOCAL_CLIENT_NODE" ]; then
-    if [ "$FT_REQ_REMOTE_CLIENT_NODE" == "$REMOTE_CLIENT_NODE" ]; then
-      echo -e "${BLUE}ERROR: As requested, REMOTE_CLIENT_NODE is same as LOCAL_CLIENT_NODE: $LOCAL_CLIENT_NODE${NC}\r\n"
-    else
-      echo -e "${RED}ERROR: Unable to find REMOTE_CLIENT_NODE. Using LOCAL_CLIENT_NODE: $LOCAL_CLIENT_NODE${NC}\r\n"
+
+  echo "Summary:"
+  echo "  LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE}"
+  echo "  REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]}"
+  echo
+
+  for NODE in "${REMOTE_CLIENT_NODE_LIST[@]}"
+  do
+    if [ "${NODE}" == "${LOCAL_CLIENT_NODE}" ]; then
+      if [ "$FT_REQ_REMOTE_CLIENT_NODE" == "$NODE" ]; then
+        echo -e "${BLUE}ERROR: As requested, REMOTE_CLIENT_NODE_LIST is same as LOCAL_CLIENT_NODE: $LOCAL_CLIENT_NODE${NC}\r\n"
+      else
+        echo -e "${RED}ERROR: Unable to find a node for REMOTE_CLIENT_NODE_LIST. Using LOCAL_CLIENT_NODE: $LOCAL_CLIENT_NODE${NC}\r\n"
+      fi
     fi
-  fi
+  done
   
   #
   # Determine Local and Remote Pods
   #
-  LOCAL_CLIENT_HOST_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}')
-  REMOTE_CLIENT_HOST_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}')
+  echo "Determine Local and Remote Pods:"
 
+  LOCAL_CLIENT_HOST_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "${LOCAL_CLIENT_NODE}" | awk -F' ' '{print $1}')
   if [ "$FT_HOSTONLY" == false ]; then
-    LOCAL_CLIENT_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide | grep -w "$LOCAL_CLIENT_NODE" | awk -F' ' '{print $1}')
-    REMOTE_CLIENT_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide| grep -w "$REMOTE_CLIENT_NODE" | awk -F' ' '{print $1}')
+    LOCAL_CLIENT_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide | grep -w "${LOCAL_CLIENT_NODE}" | awk -F' ' '{print $1}')
   else
     LOCAL_CLIENT_POD=
-    REMOTE_CLIENT_POD=
   fi
+
+  for NODE in "${REMOTE_CLIENT_NODE_LIST[@]}"
+  do
+    REMOTE_CLIENT_HOST_POD_LIST+=($(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "${NODE}" | awk -F' ' '{print $1}'))
+    if [ "$FT_HOSTONLY" == false ]; then
+      REMOTE_CLIENT_POD_LIST+=($(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_POD_NAME_PREFIX} -o wide| grep -w "${NODE}" | awk -F' ' '{print $1}'))
+    fi
+  done
+
+  echo "Summary:"
+  echo "  LOCAL_CLIENT_HOST_POD=${LOCAL_CLIENT_HOST_POD}"
+  echo "  REMOTE_CLIENT_HOST_POD_LIST=${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+  echo "  LOCAL_CLIENT_POD=${LOCAL_CLIENT_POD}"
+  echo "  REMOTE_CLIENT_POD_LIST=${REMOTE_CLIENT_POD_LIST[@]}"
+  echo
 
   #
   # Determine IP Addresses and Ports

@@ -40,7 +40,7 @@ do
         echo "${CLUSTER_ARRAY[$i]}"
         echo "-----------"
         echo
-        FT_NAMESPACE=${FT_NAMESPACE} FT_SVC_QUALIFIER=${FT_SVC_QUALIFIER} FT_NOTES=false ./test.sh
+        FT_NAMESPACE=${FT_NAMESPACE} FT_SVC_QUALIFIER=${FT_SVC_QUALIFIER} FT_NOTES=false FT_REQ_REMOTE_CLIENT_NODE=all ./test.sh
       else
         echo "  Skipping testing on Full Deployment on Cluster ${CLUSTER_ARRAY[$i]}"
       fi

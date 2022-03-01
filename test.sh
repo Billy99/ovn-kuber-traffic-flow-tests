@@ -236,29 +236,32 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ] && [ "$FT_HOSTONLY" == false ]
   echo "*** 1-b: Pod to Pod (Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_POD
-  TEST_FILENAME="01-b-pod2pod-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="01-b-pod2pod-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    TEST_SERVER_RSP=$POD_SERVER_STRING
-    process-curl
-  fi
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      TEST_SERVER_RSP=$POD_SERVER_STRING
+      process-curl
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_SERVER_POD_IP
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
-    process-iperf
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_SERVER_POD_IP
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_POD_NAME
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=
+      TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_POD_NAME
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -300,29 +303,32 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ] && [ "$FT_HOSTONLY" == false ]
   echo "*** 2-b: Pod to Host (Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_POD
-  TEST_FILENAME="02-b-pod2host-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="02-b-pod2host-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    TEST_SERVER_RSP=$HOST_SERVER_STRING
-    process-curl
-  fi
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      TEST_SERVER_RSP=$HOST_SERVER_STRING
+      process-curl
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
-    process-iperf
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$OVN_TRACE" == true ]; then
-    TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_POD_NAME
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=
+      TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_POD_NAME
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -369,7 +375,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ] && [ "$FT_HOSTONLY" == false ]
     process-iperf
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_POD_SVC_NAME
     TEST_SERVER_OVNTRACE_DST=
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
@@ -382,47 +388,50 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ] && [ "$FT_HOSTONLY" == false ]
   echo "*** 3-b: Pod -> Cluster IP Service traffic (Pod Backend - Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_POD
-  TEST_FILENAME="03-b-pod2clusterIpSvc-podBackend-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="03-b-pod2clusterIpSvc-podBackend-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$POD_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$POD_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    echo "curl SvcClusterIP:SvcPORT"
-    process-curl
-
-    if [ "$FT_CLIENTONLY" == false ] ; then
-      TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_IPV4
       TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-      echo "curl SvcEndPointIP:SvcPORT"
+      echo "curl SvcClusterIP:SvcPORT"
       process-curl
-    elif [ "$FT_NOTES" == true ]; then
-      echo "curl SvcEndPointIP:SvcPORT"
-      echo -e "${BLUE}Test Skipped - No EndPoint exported in Multi-Cluster${NC}"
-      echo
+
+      if [ "$FT_CLIENTONLY" == false ] ; then
+        TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
+        TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+        echo "curl SvcEndPointIP:SvcPORT"
+        process-curl
+      elif [ "$FT_NOTES" == true ]; then
+        echo "curl SvcEndPointIP:SvcPORT"
+        echo -e "${BLUE}Test Skipped - No EndPoint exported in Multi-Cluster${NC}"
+        echo
+      fi
+
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      echo "curl SvcName:SvcPORT"
+      process-curl
     fi
 
-    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    echo "curl SvcName:SvcPORT"
-    process-curl
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_CLUSTERIP_POD_SVC_IPV4
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_CLUSTERIP_POD_SVC_IPV4
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
-    process-iperf
-  fi
-
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_POD_SVC_NAME
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_POD_SVC_NAME
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -469,7 +478,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ] && [ "$FT_HOSTONLY" == false ]
     process-iperf
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_HOST_SVC_NAME
     TEST_SERVER_OVNTRACE_DST=
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
@@ -482,47 +491,50 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ] && [ "$FT_HOSTONLY" == false ]
   echo "*** 4-b: Pod -> Cluster IP Service traffic (Host Backend - Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_POD
-  TEST_FILENAME="04-b-pod2clusterIpSvc-hostBackend-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="04-b-pod2clusterIpSvc-hostBackend-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$HOST_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$HOST_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_HOST_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    echo "curl SvcClusterIP:SvcPORT"
-    process-curl
-
-    if [ "$FT_CLIENTONLY" == false ] ; then
-      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_HOST_SVC_IPV4
       TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-      echo "curl SvcEndPointIP:SvcPORT"
+      echo "curl SvcClusterIP:SvcPORT"
       process-curl
-    elif [ "$FT_NOTES" == true ]; then
-      echo "curl SvcEndPointIP:SvcPORT"
-      echo -e "${BLUE}Test Skipped - No EndPoint exported in Multi-Cluster${NC}"
-      echo
+
+      if [ "$FT_CLIENTONLY" == false ] ; then
+        TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+        TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+        echo "curl SvcEndPointIP:SvcPORT"
+        process-curl
+      elif [ "$FT_NOTES" == true ]; then
+        echo "curl SvcEndPointIP:SvcPORT"
+        echo -e "${BLUE}Test Skipped - No EndPoint exported in Multi-Cluster${NC}"
+        echo
+      fi
+
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_HOST_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      echo "curl SvcName:SvcPORT"
+      process-curl
     fi
 
-    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_HOST_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    echo "curl SvcName:SvcPORT"
-    process-curl
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_CLUSTERIP_HOST_SVC_IPV4
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_CLUSTERIP_HOST_SVC_IPV4
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
-    process-iperf
-  fi
-
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_HOST_SVC_NAME
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_HOST_SVC_NAME
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -563,7 +575,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ] && [ "$FT_HOSTONLY" == false ]
     process-iperf
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_SVC_NAME
     TEST_SERVER_OVNTRACE_DST=
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
@@ -576,41 +588,44 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ] && [ "$FT_HOSTONLY" == false ]
   echo "*** 5-b: Pod -> NodePort Service traffic (Pod Backend - Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_POD
-  TEST_FILENAME="05-b-pod2nodePortSvc-podBackend-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="05-b-pod2nodePortSvc-podBackend-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$POD_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$POD_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_POD_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    echo "curl SvcClusterIP:SvcPORT"
-    process-curl
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_POD_SVC_IPV4
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      echo "curl SvcClusterIP:SvcPORT"
+      process-curl
 
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_POD_SVC_PORT
-    echo "curl HostIP:NODEPORT"
-    process-curl
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_POD_SVC_PORT
+      echo "curl HostIP:NODEPORT"
+      process-curl
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    echo "curl SvcName:SvcPORT"
-    process-curl
-  fi
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      echo "curl SvcName:SvcPORT"
+      process-curl
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
-    process-iperf
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_SVC_NAME
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_SVC_NAME
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -651,7 +666,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ] && [ "$FT_HOSTONLY" == false ]
     process-iperf
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_HOST_SVC_NAME
     TEST_SERVER_OVNTRACE_DST=
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
@@ -664,41 +679,44 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ] && [ "$FT_HOSTONLY" == false ]
   echo "*** 6-b: Pod -> NodePort Service traffic (Host Backend - Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_POD
-  TEST_FILENAME="06-b-pod2nodePortSvc-hostBackend-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="06-b-pod2nodePortSvc-hostBackend-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$HOST_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$HOST_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_HOST_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    echo "curl SvcClusterIP:SvcPORT"
-    process-curl
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_HOST_SVC_IPV4
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      echo "curl SvcClusterIP:SvcPORT"
+      process-curl
 
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_HOST_SVC_PORT
-    echo "curl HostIP:NODEPORT"
-    process-curl
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_HOST_SVC_PORT
+      echo "curl HostIP:NODEPORT"
+      process-curl
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_HOST_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    echo "curl SvcName:SvcPORT"
-    process-curl
-  fi
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_HOST_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      echo "curl SvcName:SvcPORT"
+      process-curl
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
-    process-iperf
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_HOST_SVC_NAME
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_HOST_SVC_NAME
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -740,29 +758,32 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ] && [ "$FT_HOSTONLY" == false ]
   echo "*** 7-b: Host to Pod (Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_HOST_POD
-  TEST_FILENAME="07-b-host2pod-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="07-b-host2pod-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    TEST_SERVER_RSP=$POD_SERVER_STRING
-    process-curl
-  fi
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      TEST_SERVER_RSP=$POD_SERVER_STRING
+      process-curl
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_SERVER_POD_IP
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
-    process-iperf
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_SERVER_POD_IP
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_POD_NAME
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=
+      TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_POD_NAME
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -811,36 +832,39 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ] && [ "$FT_CLIENTONLY" == false
   echo "*** 8-b: Host to Host (Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_HOST_POD
-  TEST_FILENAME="08-b-host2host-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="08-b-host2host-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    TEST_SERVER_RSP=$HOST_SERVER_STRING
-    process-curl
-  fi
-
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
-    process-iperf
-  fi
-
-  if [ "$OVN_TRACE" == true ]; then
-    TEST_SERVER_OVNTRACE_SERVICE=
-    TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_POD_NAME
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    #process-ovn-trace
-    if [ "$FT_NOTES" == true ]; then
-      echo "OVN-TRACE: BEGIN"
-      echo -e "${BLUE}ovn-trace Skipped - Traffic is never in OVN, just exiting eth0 on host.${NC}"
-      echo "OVN-TRACE: END"
-      echo
-      echo "ovn-trace Skipped - Traffic is never in OVN, just exiting eth0 on host." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      TEST_SERVER_RSP=$HOST_SERVER_STRING
+      process-curl
     fi
-  fi
+
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
+      process-iperf
+    fi
+
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=
+      TEST_SERVER_OVNTRACE_DST=$HTTP_SERVER_HOST_POD_NAME
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      #process-ovn-trace
+      if [ "$FT_NOTES" == true ]; then
+        echo "OVN-TRACE: BEGIN"
+        echo -e "${BLUE}ovn-trace Skipped - Traffic is never in OVN, just exiting eth0 on host.${NC}"
+        echo "OVN-TRACE: END"
+        echo
+        echo "ovn-trace Skipped - Traffic is never in OVN, just exiting eth0 on host." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+      fi
+    fi
+  done
 fi
 
 
@@ -887,7 +911,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]
     process-iperf
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_POD_SVC_NAME
     TEST_SERVER_OVNTRACE_DST=
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
@@ -900,47 +924,50 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]
   echo "*** 9-b: Host Pod -> Cluster IP Service traffic (Pod Backend - Different Node) ***"
   echo
   
-  TEST_CLIENT_POD=$REMOTE_CLIENT_HOST_POD
-  TEST_FILENAME="09-b-host2clusterIpSvc-podBackend-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="09-b-host2clusterIpSvc-podBackend-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$POD_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$POD_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    echo "curl SvcClusterIP:SvcPORT"
-    process-curl
-
-    if [ "$FT_CLIENTONLY" == false ] ; then
-      TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_IPV4
       TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-      echo "curl SvcEndPointIP:SvcPORT"
+      echo "curl SvcClusterIP:SvcPORT"
       process-curl
-    elif [ "$FT_NOTES" == true ]; then
-      echo "curl SvcEndPointIP:SvcPORT"
-      echo -e "${BLUE}Test Skipped - No EndPoint exported in Multi-Cluster${NC}"
-      echo
+
+      if [ "$FT_CLIENTONLY" == false ] ; then
+        TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
+        TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+        echo "curl SvcEndPointIP:SvcPORT"
+        process-curl
+      elif [ "$FT_NOTES" == true ]; then
+        echo "curl SvcEndPointIP:SvcPORT"
+        echo -e "${BLUE}Test Skipped - No EndPoint exported in Multi-Cluster${NC}"
+        echo
+      fi
+
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      echo "curl SvcName:SvcPORT"
+      process-curl
     fi
 
-    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_POD_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    echo "curl SvcName:SvcPORT"
-    process-curl
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_CLUSTERIP_POD_SVC_IPV4
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_CLUSTERIP_POD_SVC_IPV4
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
-    process-iperf
-  fi
-
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_POD_SVC_NAME
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_POD_SVC_NAME
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -987,7 +1014,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 10 ]; then
     process-iperf
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_HOST_SVC_NAME
     TEST_SERVER_OVNTRACE_DST=
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
@@ -1000,47 +1027,50 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 10 ]; then
   echo "*** 10-b: Host Pod -> Cluster IP Service traffic (Host Backend - Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_HOST_POD
-  TEST_FILENAME="10-b-host2clusterIpSvc-hostBackend-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="10-b-host2clusterIpSvc-hostBackend-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$HOST_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$HOST_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_HOST_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    echo "curl SvcClusterIP:SvcPORT"
-    process-curl
-
-    if [ "$FT_CLIENTONLY" == false ] ; then
-      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_HOST_SVC_IPV4
       TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-      echo "curl SvcEndPointIP:SvcPORT"
+      echo "curl SvcClusterIP:SvcPORT"
       process-curl
-    elif [ "$FT_NOTES" == true ]; then
-      echo "curl SvcEndPointIP:SvcPORT"
-      echo -e "${BLUE}Test Skipped - No EndPoint exported in Multi-Cluster${NC}"
-      echo
+
+      if [ "$FT_CLIENTONLY" == false ] ; then
+        TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+        TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+        echo "curl SvcEndPointIP:SvcPORT"
+        process-curl
+      elif [ "$FT_NOTES" == true ]; then
+        echo "curl SvcEndPointIP:SvcPORT"
+        echo -e "${BLUE}Test Skipped - No EndPoint exported in Multi-Cluster${NC}"
+        echo
+      fi
+
+      TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_HOST_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      echo "curl SvcName:SvcPORT"
+      process-curl
     fi
 
-    TEST_SERVER_HTTP_DST=$HTTP_CLUSTERIP_HOST_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    echo "curl SvcName:SvcPORT"
-    process-curl
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_CLUSTERIP_HOST_SVC_IPV4
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_CLUSTERIP_HOST_SVC_IPV4
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
-    process-iperf
-  fi
-
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_HOST_SVC_NAME
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=$HTTP_CLUSTERIP_HOST_SVC_NAME
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -1085,7 +1115,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ] && [ "$FT_HOSTONLY" == false 
     process-iperf
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_SVC_NAME
     TEST_SERVER_OVNTRACE_DST=
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
@@ -1098,48 +1128,51 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ] && [ "$FT_HOSTONLY" == false 
   echo "*** 11-b: Host Pod -> NodePort Service traffic (Pod Backend - Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_HOST_POD
-  TEST_FILENAME="11-b-host2nodePortSvc-podBackend-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="11-b-host2nodePortSvc-podBackend-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$POD_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$POD_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_POD_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    echo "curl SvcClusterIP:NODEPORT"
-    process-curl
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_POD_SVC_IPV4
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      echo "curl SvcClusterIP:NODEPORT"
+      process-curl
 
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_POD_SVC_PORT
-    echo "curl hostIP:NODEPORT"
-    process-curl
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_POD_SVC_PORT
+      echo "curl hostIP:NODEPORT"
+      process-curl
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    echo "curl SvcName:NODEPORT"
-    process-curl
-    #if [ "$FT_NOTES" == true ]; then
-    #  echo "curl SvcName:NODEPORT"
-    #  echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-    #  echo -e "${BLUE}curl: (6) Could not resolve host: ft-http-service-node-v4; Unknown error${NC}"
-    #  echo -e "${BLUE}Should this work?${NC}"
-    #  echo
-    #fi
-  fi
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      echo "curl SvcName:NODEPORT"
+      process-curl
+      #if [ "$FT_NOTES" == true ]; then
+      #  echo "curl SvcName:NODEPORT"
+      #  echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+      #  echo -e "${BLUE}curl: (6) Could not resolve host: ft-http-service-node-v4; Unknown error${NC}"
+      #  echo -e "${BLUE}Should this work?${NC}"
+      #  echo
+      #fi
+    fi
 
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
-    process-iperf
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
+      process-iperf
+    fi
 
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_SVC_NAME
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-    process-ovn-trace
-  fi
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_SVC_NAME
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_POD_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -1186,7 +1219,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ] && [ "$FT_CLIENTONLY" == fals
     process-iperf
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_HOST_SVC_NAME
     TEST_SERVER_OVNTRACE_DST=
     TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
@@ -1205,53 +1238,56 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ] && [ "$FT_CLIENTONLY" == fals
   echo "*** 12-b: Host Pod -> NodePort Service traffic (Host Backend - Different Node) ***"
   echo
 
-  TEST_CLIENT_POD=$REMOTE_CLIENT_HOST_POD
-  TEST_FILENAME="12-b-host2nodePortSvc-hostBackend-diffNode.txt"
+  for POD in "${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="12-b-host2nodePortSvc-hostBackend-diffNode.txt"
 
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_RSP=$HOST_SERVER_STRING
+    if [ "$CURL" == true ]; then
+      TEST_SERVER_RSP=$HOST_SERVER_STRING
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_HOST_SVC_IPV4
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    echo "curl SvcClusterIP:NODEPORT"
-    process-curl
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_HOST_SVC_IPV4
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      echo "curl SvcClusterIP:NODEPORT"
+      process-curl
 
-    TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_HOST_SVC_PORT
-    echo "curl EndPointIP:NODEPORT"
-    process-curl
+      TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_NODEPORT_HOST_SVC_PORT
+      echo "curl EndPointIP:NODEPORT"
+      process-curl
 
-    TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_HOST_SVC_NAME
-    TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    echo "curl SvcName:NODEPORT"
-    process-curl
-    #if [ "$FT_NOTES" == true ]; then
-    #  echo "curl SvcName:NODEPORT"
-    #  echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
-    #  echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
-    #  echo
-    #fi
-  fi
-
-  if [ "$IPERF" == true ]; then
-    TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
-    TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
-    process-iperf
-  fi
-
-  if [ "$OVN_TRACE" == true ]; then 
-    TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_HOST_SVC_NAME
-    TEST_SERVER_OVNTRACE_DST=
-    TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
-    TEST_SERVER_OVNTRACE_RMTHOST=
-
-    echo "ovnkube-trace SvcName:NODEPORT"
-    if [ "$FT_NOTES" == true ]; then
-      echo -e "${BLUE}If Test Skipped - why trace the same?${NC}"
+      TEST_SERVER_HTTP_DST=$HTTP_NODEPORT_HOST_SVC_NAME
+      TEST_SERVER_HTTP_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      echo "curl SvcName:NODEPORT"
+      process-curl
+      #if [ "$FT_NOTES" == true ]; then
+      #  echo "curl SvcName:NODEPORT"
+      #  echo "kubectl exec -it -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- $CURL_CMD \"http://${TEST_SERVER_HTTP_DST}:${TEST_SERVER_HTTP_DST_PORT}/\""
+      #  echo -e "${BLUE}Test Skipped - the host has no idea about svc DNS resolution${NC}"
+      #  echo
+      #fi
     fi
 
-    process-ovn-trace
-  fi
+    if [ "$IPERF" == true ]; then
+      TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
+      TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
+      process-iperf
+    fi
+
+    if [ "$OVN_TRACE" == true ]; then
+      TEST_SERVER_OVNTRACE_SERVICE=$HTTP_NODEPORT_HOST_SVC_NAME
+      TEST_SERVER_OVNTRACE_DST=
+      TEST_SERVER_OVNTRACE_DST_PORT=$HTTP_CLUSTERIP_HOST_SVC_PORT
+      TEST_SERVER_OVNTRACE_RMTHOST=
+
+      echo "ovnkube-trace SvcName:NODEPORT"
+      if [ "$FT_NOTES" == true ]; then
+        echo -e "${BLUE}If Test Skipped - why trace the same?${NC}"
+      fi
+
+      process-ovn-trace
+    fi
+  done
 fi
 
 
@@ -1265,8 +1301,44 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 13 ]; then
     echo "*** 13-a: Pod -> External Network ***"
     echo
   
-    TEST_CLIENT_POD=$REMOTE_CLIENT_POD
-    TEST_FILENAME="13-a-pod2external.txt"
+    for POD in "${REMOTE_CLIENT_POD_LIST[@]}"
+    do
+      TEST_CLIENT_POD=$POD
+      TEST_FILENAME="13-a-pod2external.txt"
+
+      if [ "$CURL" == true ]; then
+        TEST_SERVER_HTTP_DST=$EXTERNAL_URL
+        TEST_SERVER_HTTP_DST_PORT=
+        TEST_SERVER_RSP=$EXTERNAL_SERVER_STRING
+        process-curl
+      fi
+
+      if [ "$IPERF" == true ]; then
+        if [ "$FT_NOTES" == true ]; then
+          echo -e "${BLUE}iperf Skipped - No external iperf server.${NC}"
+          echo
+          echo "iperf Skipped - No external iperf server." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+        fi
+      fi
+
+      if [ "$OVN_TRACE" == true ]; then
+        TEST_SERVER_OVNTRACE_SERVICE=
+        TEST_SERVER_OVNTRACE_DST=
+        TEST_SERVER_OVNTRACE_DST_PORT=
+        TEST_SERVER_OVNTRACE_RMTHOST=$EXTERNAL_SERVER_STRING
+        process-ovn-trace
+      fi
+    done
+  fi
+
+  echo
+  echo "*** 13-b: Host -> External Network ***"
+  echo
+
+  for POD in "${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+  do
+    TEST_CLIENT_POD=$POD
+    TEST_FILENAME="13-b-host2external.txt"
 
     if [ "$CURL" == true ]; then
       TEST_SERVER_HTTP_DST=$EXTERNAL_URL
@@ -1279,50 +1351,20 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 13 ]; then
       if [ "$FT_NOTES" == true ]; then
         echo -e "${BLUE}iperf Skipped - No external iperf server.${NC}"
         echo
-        echo "iperf Skipped - No external iperf server." > ${IPERF_LOGS_DIR}/${TEST_FILENAME}
+        echo "iperf Skipped - No external iperf server." > iperf-logs/${TEST_FILENAME}
       fi
     fi
 
-    if [ "$OVN_TRACE" == true ]; then 
-      TEST_SERVER_OVNTRACE_SERVICE=
-      TEST_SERVER_OVNTRACE_DST=
-      TEST_SERVER_OVNTRACE_DST_PORT=
-      TEST_SERVER_OVNTRACE_RMTHOST=$EXTERNAL_SERVER_STRING
-      process-ovn-trace
+    if [ "$OVN_TRACE" == true ]; then
+      if [ "$FT_NOTES" == true ]; then
+        echo "OVN-TRACE: BEGIN"
+        echo -e "${BLUE}ovn-trace Skipped - Traffic is never in OVN, just exiting eth0 on host.${NC}"
+        echo "OVN-TRACE: END"
+        echo
+        echo "ovn-trace Skipped - Traffic is never in OVN, just exiting eth0 on host." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
+      fi
     fi
-  fi
-
-  echo
-  echo "*** 13-b: Host -> External Network ***"
-  echo
-
-  TEST_CLIENT_POD=$REMOTE_CLIENT_HOST_POD
-  TEST_FILENAME="13-b-host2external.txt"
-
-  if [ "$CURL" == true ]; then
-    TEST_SERVER_HTTP_DST=$EXTERNAL_URL
-    TEST_SERVER_HTTP_DST_PORT=
-    TEST_SERVER_RSP=$EXTERNAL_SERVER_STRING
-    process-curl
-  fi
-
-  if [ "$IPERF" == true ]; then
-    if [ "$FT_NOTES" == true ]; then
-      echo -e "${BLUE}iperf Skipped - No external iperf server.${NC}"
-      echo
-      echo "iperf Skipped - No external iperf server." > iperf-logs/${TEST_FILENAME}
-    fi
-  fi
-
-  if [ "$OVN_TRACE" == true ]; then 
-    if [ "$FT_NOTES" == true ]; then
-      echo "OVN-TRACE: BEGIN"
-      echo -e "${BLUE}ovn-trace Skipped - Traffic is never in OVN, just exiting eth0 on host.${NC}"
-      echo "OVN-TRACE: END"
-      echo
-      echo "ovn-trace Skipped - Traffic is never in OVN, just exiting eth0 on host." > ${OVN_TRACE_LOGS_DIR}/${TEST_FILENAME}
-    fi
-  fi
+  done
 fi
 
 
@@ -1361,7 +1403,7 @@ if [ "$FT_NOTES" == true ]; then
         fi
       fi
 
-      if [ "$OVN_TRACE" == true ]; then 
+      if [ "$OVN_TRACE" == true ]; then
         if [ "$FT_NOTES" == true ]; then
           echo "OVN-TRACE: BEGIN"
           echo -e "${BLUE}ovn-trace Skipped.${NC}"
@@ -1401,7 +1443,7 @@ if [ "$FT_NOTES" == true ]; then
       fi
     fi
 
-    if [ "$OVN_TRACE" == true ]; then 
+    if [ "$OVN_TRACE" == true ]; then
       if [ "$FT_NOTES" == true ]; then
         echo "OVN-TRACE: BEGIN"
         echo -e "${BLUE}ovn-trace Skipped.${NC}"
@@ -1466,7 +1508,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 15 ] && [ "$FT_CLIENTONLY" == fals
       fi
     fi
 
-    if [ "$OVN_TRACE" == true ]; then 
+    if [ "$OVN_TRACE" == true ]; then
       if [ "$FT_NOTES" == true ]; then
         echo "OVN-TRACE: BEGIN"
         echo -e "${BLUE}ovn-trace Skipped.${NC}"
@@ -1524,7 +1566,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 15 ] && [ "$FT_CLIENTONLY" == fals
     fi
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     if [ "$FT_NOTES" == true ]; then
       echo "OVN-TRACE: BEGIN"
       echo -e "${BLUE}ovn-trace Skipped.${NC}"
@@ -1576,7 +1618,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 16 ] ; then
       fi
     fi
 
-    if [ "$OVN_TRACE" == true ]; then 
+    if [ "$OVN_TRACE" == true ]; then
       if [ "$FT_NOTES" == true ]; then
         echo "OVN-TRACE: BEGIN"
         echo -e "${BLUE}ovn-trace Skipped.${NC}"
@@ -1622,7 +1664,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 16 ] ; then
     fi
   fi
 
-  if [ "$OVN_TRACE" == true ]; then 
+  if [ "$OVN_TRACE" == true ]; then
     if [ "$FT_NOTES" == true ]; then
       echo "OVN-TRACE: BEGIN"
       echo -e "${BLUE}ovn-trace Skipped.${NC}"

@@ -276,7 +276,7 @@ Default/Override Values:
   Launch Control:
     FT_HOSTONLY                        false
     FT_REQ_SERVER_NODE                 all
-    FT_REQ_REMOTE_CLIENT_NODE          
+    FT_REQ_REMOTE_CLIENT_NODE          first
   From YAML Files:
     NET_ATTACH_DEF_NAME                ftnetattach
     SRIOV_RESOURCE_NAME                openshift.io/mlnx_bf
@@ -356,7 +356,7 @@ Default/Override Values:
     HTTP_SERVER_POD_NAME               ft-http-server-pod-v4
     CLEAN_ALL                          false
     FT_REQ_SERVER_NODE                 all
-    FT_REQ_REMOTE_CLIENT_NODE          
+    FT_REQ_REMOTE_CLIENT_NODE          first
   Label Management:
     FT_REQ_SERVER_NODE                 all
     FT_SERVER_NODE_LABEL               ft.ServerPod
@@ -437,7 +437,7 @@ Default/Override Values:
     IPERF_TIME                         2
     OVN_TRACE                          false
     OVN_TRACE_CMD                      ./ovnkube-trace -loglevel=5 -tcp
-    FT_REQ_REMOTE_CLIENT_NODE          all
+    FT_REQ_REMOTE_CLIENT_NODE          first
   OVN Trace Control:
     OVN_K_NAMESPACE                    ovn-kubernetes
     SSL_ENABLE                         -noSSL
@@ -470,8 +470,8 @@ Queried Values:
     SERVER_POD_NODE                    ovn-worker3
     LOCAL_CLIENT_NODE                  ovn-worker3
     LOCAL_CLIENT_POD                   ft-client-pod-76qlj
-    REMOTE_CLIENT_NODE                 ovn-worker4
-    REMOTE_CLIENT_POD                  ft-client-pod-566xj
+    REMOTE_CLIENT_NODE_LIST             ovn-worker4
+    REMOTE_CLIENT_POD_LIST             ft-client-pod-566xj
     HTTP_CLUSTERIP_POD_SVC_IPV4        10.96.39.137
     HTTP_CLUSTERIP_POD_SVC_PORT        8080
     HTTP_NODEPORT_POD_SVC_IPV4         10.96.28.182
@@ -486,8 +486,8 @@ Queried Values:
     SERVER_HOST_NODE                   ovn-worker3
     LOCAL_CLIENT_HOST_NODE             ovn-worker3
     LOCAL_CLIENT_HOST_POD              ft-client-pod-host-kttz2
-    REMOTE_CLIENT_HOST_NODE            ovn-worker4
-    REMOTE_CLIENT_HOST_POD             ft-client-pod-host-hp5r2
+    REMOTE_CLIENT_HOST_NODE_LIST       ovn-worker4
+    REMOTE_CLIENT_HOST_POD_LIST        ft-client-pod-host-hp5r2
     HTTP_CLUSTERIP_HOST_SVC_IPV4       10.96.21.56
     HTTP_CLUSTERIP_HOST_SVC_PORT       8081
     HTTP_NODEPORT_HOST_SVC_IPV4        10.96.252.33
@@ -800,6 +800,11 @@ To get the DNS domain suffixes for the fully qualified service names, examine th
     nameserver 100.1.0.10
     options ndots:5
 ```
+
+In a single cluster environment, `FT_REQ_REMOTE_CLIENT_NODE` is defaulted to `first`.
+This implies to choose the first Client Pod that is not on the same node as the Server Pod.
+In a multi-cluster environment, `FT_REQ_REMOTE_CLIENT_NODE` is defaulted to `all`, which
+causes the script to loop through all of the Client Pods that aren't on the same node as the Server Pod.
 
 ### mccleanup.sh
 
