@@ -22,6 +22,7 @@ add_labels() {
         # - Assign label so SR-IOV Client DaemonSet Pod started on this Node.
         FOUND_SRIOV=true
         FT_SRIOV_CLIENT=true
+        echo "  Applying Server Label \"$FT_CLIENT_NODE_LABEL=sriov\" to ${NODE_ARRAY[$i]}"
         kubectl label nodes ${NODE_ARRAY[$i]} --overwrite=true $FT_CLIENT_NODE_LABEL=sriov
       else
         # SR-IOV NOT detected.
@@ -30,17 +31,19 @@ add_labels() {
         # - Assign label so Normal Client DaemonSet Pod started on this Node.
         FOUND_SRIOV=false
         FT_NORMAL_CLIENT=true
+        echo "  Applying Server Label \"$FT_CLIENT_NODE_LABEL=client\" to ${NODE_ARRAY[$i]}"
         kubectl label nodes ${NODE_ARRAY[$i]} --overwrite=true $FT_CLIENT_NODE_LABEL=client
       fi
 
       if [ "$FOUND_NODE" == false ] && [ "$FT_REQ_SERVER_NODE" == all ] || [ "$FT_REQ_SERVER_NODE" == "${NODE_ARRAY[$i]}" ]; then
-        echo "  Applying Server Label \"$FT_SERVER_NODE_LABEL\" to ${NODE_ARRAY[$i]}"
+        echo "  Applying Server Label \"$FT_SERVER_NODE_LABEL=server\" to ${NODE_ARRAY[$i]}"
         kubectl label nodes ${NODE_ARRAY[$i]} --overwrite=true $FT_SERVER_NODE_LABEL=server
         FOUND_NODE=true
         if [ "$FOUND_SRIOV" == true ]; then
           FT_SRIOV_SERVER=true
         fi
       else
+        echo "  Applying Server Label \"$FT_SERVER_NODE_LABEL=none\" to ${NODE_ARRAY[$i]}"
         kubectl label nodes ${NODE_ARRAY[$i]} --overwrite=true $FT_SERVER_NODE_LABEL=none
       fi
     fi

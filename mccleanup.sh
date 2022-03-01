@@ -9,6 +9,8 @@ shopt -s expand_aliases
 # This needs to be done before other files are sourced.
 test_for_kubectl
 
+# Save Context to restore when done.
+ORIG_CONTEXT=$(kubectl config current-context)
 
 #
 # Default values (possible to override)
@@ -52,3 +54,6 @@ do
       echo " Flow-Test not deployed on Cluster ${CLUSTER_ARRAY[$i]}"
     fi
 done
+
+# Restore context to original.
+kubectl config use-context ${ORIG_CONTEXT}

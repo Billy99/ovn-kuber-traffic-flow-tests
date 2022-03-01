@@ -9,7 +9,7 @@ shopt -s expand_aliases
 # This needs to be done before other files are sourced.
 test_for_kubectl
 
-COMMAND="test"
+COMMAND="cleanup"
 
 # Source the functions in other files
 . variables.sh

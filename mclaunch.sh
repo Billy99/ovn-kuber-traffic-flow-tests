@@ -6,10 +6,38 @@ shopt -s expand_aliases
 . utilities.sh
 
 
+function client_only_deployment() {
+  local cluster=$1
+
+  # In Client-Only mode, pin the Server label to the same node
+  # as the Gateway (as indicated by the node label FT_MC_CO_SERVER_LABEL),
+  # so in Multi-Cluster Deployment:
+  #   * "Same Node" implies same node as Gateway
+  #   * "Different Node" implies different node from Gateway
+  LCL_SERVER_NODE=
+  if [ ! -z "$FT_MC_CO_SERVER_LABEL" ] ; then
+    LCL_SERVER_NODE=$(kubectl get nodes --no-headers -l ${FT_MC_CO_SERVER_LABEL} -o custom-columns=":metadata.name")
+  fi
+
+  echo "FT_NAMESPACE=${FT_NAMESPACE}"
+  echo "FT_MC_CO_SERVER_LABEL=${FT_MC_CO_SERVER_LABEL}"
+  echo "LCL_SERVER_NODE=${LCL_SERVER_NODE}"
+
+  echo "   Adding Client-Only Deployment to ${cluster}"
+  echo "----------"
+  FT_NAMESPACE=${FT_NAMESPACE} FT_EXPORT_SVC=false FT_CLIENTONLY=true FT_REQ_SERVER_NODE=${LCL_SERVER_NODE} ./launch.sh
+  echo "----------"
+}
+
+
+# Save Context to restore when done.
+ORIG_CONTEXT=$(kubectl config current-context)
+
 #
 # Default values (possible to override)
 #
 FT_NAMESPACE=${FT_NAMESPACE:-flow-test}
+FT_MC_CO_SERVER_LABEL=${FT_MC_CO_SERVER_LABEL:-submariner.io/gateway=true}
 
 FULL_CLUSTERS="all"
 CO_CLUSTERS="all"
@@ -61,10 +89,7 @@ do
   # Client Only (default case of FULL_CLUSTERS="all" and CO_CLUSTERS="all").
   if [ "$i" == "$(($CLUSTER_LEN-1))" ] && [ "${CO_DEPLOYMENT}" == false ] && [ "${FULL_DEPLOYMENT}" == true ] ; then
     echo "  Last Cluster and CO Deployment not found and Full Deployment deployed."
-    echo "   Adding CO Deployment to ${CLUSTER_ARRAY[$i]}"
-    echo "----------"
-    FT_NAMESPACE=${FT_NAMESPACE} FT_EXPORT_SVC=false FT_CLIENTONLY=true ./launch.sh
-    echo "----------"
+    client_only_deployment ${CLUSTER_ARRAY[$i]}
 
     CO_DEPLOYMENT=true
     FOUND=true
@@ -107,10 +132,7 @@ do
         fi
 
         if [ "${CO_CLUSTERS[$k]}" == "${CLUSTER_ARRAY[$i]}" ] ; then
-          echo "   Adding CO Deployment to ${CLUSTER_ARRAY[$i]}"
-          echo "----------"
-          FT_NAMESPACE=${FT_NAMESPACE} FT_EXPORT_SVC=false FT_CLIENTONLY=true ./launch.sh
-          echo "----------"
+          client_only_deployment ${CLUSTER_ARRAY[$i]}
 
           CO_DEPLOYMENT=true
           FOUND=true
@@ -129,10 +151,7 @@ do
         FULL_DEPLOYMENT=true
         FOUND=true
       elif [ "$CO_ALL_FOUND" == true ] ; then
-        echo "   Adding CO Deployment to ${CLUSTER_ARRAY[$i]}"
-        echo "----------"
-        FT_NAMESPACE=${FT_NAMESPACE} FT_EXPORT_SVC=false FT_CLIENTONLY=true ./launch.sh
-        echo "----------"
+        client_only_deployment ${CLUSTER_ARRAY[$i]}
 
         CO_DEPLOYMENT=true
         FOUND=true
@@ -179,12 +198,10 @@ if [ "$CO_DEPLOYMENT" == false ] ; then
   fi
 
   if [ ! -z "$EMPTY_CLUSTER" ] ; then
-    echo "CO Deployment not found so using a random cluster Flow-Test was not deployed on."
-    echo "   Adding CO Deployment to ${EMPTY_CLUSTER}"
-    echo "----------"
     kubectl config use-context ${EMPTY_CLUSTER} &>/dev/null
-    FT_NAMESPACE=${FT_NAMESPACE} FT_EXPORT_SVC=false FT_CLIENTONLY=true ./launch.sh
-    echo "----------"
+
+    echo "CO Deployment not found so using a random cluster Flow-Test was not deployed on."
+    client_only_deployment ${EMPTY_CLUSTER}
 
     CO_DEPLOYMENT=true
     EMPTY_CLUSTER=
@@ -192,3 +209,6 @@ if [ "$CO_DEPLOYMENT" == false ] ; then
     echo "ERROR: CO Deployment not found and no empty Clusters detected."
   fi
 fi
+
+# Restore context to original.
+kubectl config use-context ${ORIG_CONTEXT}

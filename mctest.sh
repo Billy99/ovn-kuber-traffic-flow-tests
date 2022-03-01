@@ -9,7 +9,6 @@ shopt -s expand_aliases
 # This needs to be done before other files are sourced.
 test_for_kubectl
 
-
 #
 # Default values (possible to override)
 #
@@ -17,6 +16,7 @@ FT_NAMESPACE=${FT_NAMESPACE:-flow-test}
 FT_SVC_QUALIFIER=${FT_SVC_QUALIFIER:-".${FT_NAMESPACE}.svc.clusterset.local"}
 HTTP_SERVER_HOST_POD_NAME=${HTTP_SERVER_HOST_POD_NAME:-ft-http-server-host-v4}
 
+# Save Context to restore when done.
 ORIG_CONTEXT=$(kubectl config current-context)
 
 # Retrieve all the managed clusters
@@ -35,7 +35,12 @@ do
       TEST_SERVER=`kubectl get pods -n ${FT_NAMESPACE} | grep -o "$HTTP_SERVER_HOST_POD_NAME"`
       if [ -z "${TEST_SERVER}" ]; then
         echo "  Testing Remote Services on CO Deployment on Cluster ${CLUSTER_ARRAY[$i]}"
-        FT_NAMESPACE=${FT_NAMESPACE} FT_SVC_QUALIFIER=${FT_SVC_QUALIFIER} FT_NOTES=false ./test.sh
+        echo
+        echo "-----------"
+        echo "${CLUSTER_ARRAY[$i]}"
+        echo "-----------"
+        echo
+        FT_NAMESPACE=${FT_NAMESPACE} FT_SVC_QUALIFIER=${FT_SVC_QUALIFIER} FT_NOTES=false FT_REQ_REMOTE_CLIENT_NODE=all ./test.sh
       else
         echo "  Skipping testing on Full Deployment on Cluster ${CLUSTER_ARRAY[$i]}"
       fi
@@ -44,4 +49,5 @@ do
     fi
 done
 
+# Restore context to original.
 kubectl config use-context ${ORIG_CONTEXT}
