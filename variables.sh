@@ -22,7 +22,7 @@ FT_MC_CO_SERVER_LABEL=${FT_MC_CO_SERVER_LABEL:-submariner.io/gateway=true}
 # Launch specific variables
 NET_ATTACH_DEF_NAME=${NET_ATTACH_DEF_NAME:-ftnetattach}
 SRIOV_RESOURCE_NAME=${SRIOV_RESOURCE_NAME:-openshift.io/mlnx_bf}
-TEST_IMAGE=${TEST_IMAGE:-quay.io/billy99/ft-base-image:agn-3}
+TEST_IMAGE=${TEST_IMAGE:-quay.io/billy99/ft-base-image:0.8}
 
 
 # Clean specific variables
@@ -34,6 +34,7 @@ TEST_CASE=${TEST_CASE:-0}
 VERBOSE=${VERBOSE:-false}
 FT_VARS=${FT_VARS:-false}
 FT_NOTES=${FT_NOTES:-true}
+FT_DEBUG=${FT_DEBUG:-false}
 # curl Control
 CURL=${CURL:-true}
 CURL_CMD=${CURL_CMD:-curl -m 5}
@@ -111,6 +112,41 @@ REMOTE_CLIENT_HOST_POD_LIST=()
 FT_SERVER_NODE_LABEL=ft.ServerPod
 FT_CLIENT_NODE_LABEL=ft.ClientPod
 
+HTTP_SERVER_POD_IP=
+IPERF_SERVER_POD_IP=
+
+HTTP_CLUSTERIP_HOST_SVC_IPV4_LIST=()
+HTTP_CLUSTERIP_HOST_SVC_CLUSTER_LIST=()
+
+IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST=()
+IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST=()
+
+HTTP_CLUSTERIP_POD_SVC_IPV4_LIST=()
+HTTP_CLUSTERIP_POD_SVC_CLUSTER_LIST=()
+
+IPERF_CLUSTERIP_POD_SVC_IPV4_LIST=()
+IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST=()
+
+HTTP_NODEPORT_POD_SVC_IPV4_LIST=()
+HTTP_NODEPORT_POD_SVC_CLUSTER_LIST=()
+
+HTTP_NODEPORT_HOST_SVC_IPV4_LIST=()
+HTTP_NODEPORT_HOST_SVC_CLUSTER_LIST=()
+
+IPERF_NODEPORT_POD_SVC_IPV4_LIST=()
+IPERF_NODEPORT_POD_SVC_CLUSTER_LIST=()
+
+IPERF_NODEPORT_HOST_SVC_IPV4_LIST=()
+IPERF_NODEPORT_HOST_SVC_CLUSTER_LIST=()
+
+MY_CLUSTER=
+SVCNAME_CLUSTER=
+SERVER_NODE=
+
+UNKNOWN="Unknown"
+EXTERNAL="External"
+REMOTE="Remote"
+
 dump-working-data() {
   echo
   echo "Default/Override Values:"
@@ -136,6 +172,7 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    VERBOSE                            $VERBOSE"
   echo "    FT_VARS                            $FT_VARS"
   echo "    FT_NOTES                           $FT_NOTES"
+  echo "    FT_DEBUG                           $FT_DEBUG"
   echo "    CURL                               $CURL"
   echo "    CURL_CMD                           $CURL_CMD"
   echo "    IPERF                              $IPERF"
@@ -197,13 +234,13 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    LOCAL_CLIENT_POD                   $LOCAL_CLIENT_POD"
   echo "    REMOTE_CLIENT_NODE_LIST            $REMOTE_CLIENT_NODE_LIST"
   echo "    REMOTE_CLIENT_POD_LIST             $REMOTE_CLIENT_POD_LIST"
-  echo "    HTTP_CLUSTERIP_POD_SVC_IPV4        $HTTP_CLUSTERIP_POD_SVC_IPV4"
+  echo "    HTTP_CLUSTERIP_POD_SVC_IPV4_LIST   $HTTP_CLUSTERIP_POD_SVC_IPV4_LIST"
   echo "    HTTP_CLUSTERIP_POD_SVC_PORT        $HTTP_CLUSTERIP_POD_SVC_PORT"
-  echo "    HTTP_NODEPORT_POD_SVC_IPV4         $HTTP_NODEPORT_POD_SVC_IPV4"
+  echo "    HTTP_NODEPORT_POD_SVC_IPV4_LIST    $HTTP_NODEPORT_POD_SVC_IPV4_LIST"
   echo "    HTTP_NODEPORT_POD_SVC_PORT         $HTTP_NODEPORT_POD_SVC_PORT"
-  echo "    IPERF_CLUSTERIP_POD_SVC_IPV4       $IPERF_CLUSTERIP_POD_SVC_IPV4"
+  echo "    IPERF_CLUSTERIP_POD_SVC_IPV4_LIST  $IPERF_CLUSTERIP_POD_SVC_IPV4_LIST"
   echo "    IPERF_CLUSTERIP_POD_SVC_PORT       $IPERF_CLUSTERIP_POD_SVC_PORT"
-  echo "    IPERF_NODEPORT_POD_SVC_IPV4        $IPERF_NODEPORT_POD_SVC_IPV4"
+  echo "    IPERF_NODEPORT_POD_SVC_IPV4_LIST   $IPERF_NODEPORT_POD_SVC_IPV4_LIST"
   echo "    IPERF_NODEPORT_POD_SVC_PORT        $IPERF_NODEPORT_POD_SVC_PORT"
   echo "  Host backed:"
   echo "    HTTP_SERVER_HOST_IP                $HTTP_SERVER_HOST_IP"
@@ -213,13 +250,13 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    LOCAL_CLIENT_HOST_POD              $LOCAL_CLIENT_HOST_POD"
   echo "    REMOTE_CLIENT_HOST_NODE_LIST       $REMOTE_CLIENT_NODE_LIST"
   echo "    REMOTE_CLIENT_HOST_POD_LIST        $REMOTE_CLIENT_HOST_POD_LIST"
-  echo "    HTTP_CLUSTERIP_HOST_SVC_IPV4       $HTTP_CLUSTERIP_HOST_SVC_IPV4"
+  echo "    HTTP_CLUSTERIP_HOST_SVC_IPV4_LIST  $HTTP_CLUSTERIP_HOST_SVC_IPV4_LIST"
   echo "    HTTP_CLUSTERIP_HOST_SVC_PORT       $HTTP_CLUSTERIP_HOST_SVC_PORT"
-  echo "    HTTP_NODEPORT_HOST_SVC_IPV4        $HTTP_NODEPORT_HOST_SVC_IPV4"
+  echo "    HTTP_NODEPORT_HOST_SVC_IPV4_LIST   $HTTP_NODEPORT_HOST_SVC_IPV4_LIST"
   echo "    HTTP_NODEPORT_HOST_SVC_PORT        $HTTP_NODEPORT_HOST_SVC_PORT"
-  echo "    IPERF_CLUSTERIP_HOST_SVC_IPV4      $IPERF_CLUSTERIP_HOST_SVC_IPV4"
+  echo "    IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST $IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST"
   echo "    IPERF_CLUSTERIP_HOST_SVC_PORT      $IPERF_CLUSTERIP_HOST_SVC_PORT"
-  echo "    IPERF_NODEPORT_HOST_SVC_IPV4       $IPERF_NODEPORT_HOST_SVC_IPV4"
+  echo "    IPERF_NODEPORT_HOST_SVC_IPV4_LIST  $IPERF_NODEPORT_HOST_SVC_IPV4_LIST"
   echo "    IPERF_NODEPORT_HOST_SVC_PORT       $IPERF_NODEPORT_HOST_SVC_PORT"
   echo "  Kubernetes API:"
   echo "    HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4    $HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4"
@@ -372,6 +409,8 @@ determine-default-data() {
 }
 
 query-dynamic-data() {
+  MY_CLUSTER=$(kubectl config current-context)
+
   # In Client Only mode, no Server Pods or Services are created. They are assumed
   # to be in another cluster. So checks for FT_CLIENTONLY are needed to skip
   # any queries looking for Server Pods or Services.
@@ -384,21 +423,27 @@ query-dynamic-data() {
   #
   if [ "$FT_CLIENTONLY" == false ] ; then
     SERVER_POD_NODE=$(kubectl get pods -n ${FT_NAMESPACE} -o wide | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $7}')
+    SVCNAME_CLUSTER=$MY_CLUSTER
+
+    # Local Client Node is the same Node Server is running on.
+    LOCAL_CLIENT_NODE=$SERVER_POD_NODE
   else
   	# In Client Only, there are no Server Nodes, so leave blank and logic below
   	# will pick the first non-Master. 
-    SERVER_POD_NODE=
+    SERVER_POD_NODE=$REMOTE
+    SVCNAME_CLUSTER=$UNKNOWN
+
+    # Leave blank and determine below.
+    LOCAL_CLIENT_NODE=
   fi
 
-  # Local Client Node is the same Node Server is running on.
-  LOCAL_CLIENT_NODE=$SERVER_POD_NODE
 
   # Find the REMOTE NODE for POD and HOST POD. (REMOTE is a node server is NOT running on)
-  echo "Determine Local and Remote Nodes:"
+  [ "$FT_DEBUG" == true ] && echo "Determine Local and Remote Nodes:"
   NODE_ARRAY=($(kubectl get nodes --no-headers=true | awk -F' ' '{print $1}'))
   for NODE in "${NODE_ARRAY[@]}"
   do
-    echo "Processing NODE=${NODE}"
+    [ "$FT_DEBUG" == true ] && echo "  Processing NODE=${NODE}"
     # Check for non-master (KIND clusters don't have "worker" role set)
     kubectl get node ${NODE} --no-headers=true | awk -F' ' '{print $3}' | grep -q master
     if [ "$?" == 1 ]; then
@@ -406,39 +451,40 @@ query-dynamic-data() {
       # and there is no Server Node, which is the default), then use this node as Local Client.
       if [ "$FT_REQ_SERVER_NODE" == "${NODE}" ] && [ -z "${LOCAL_CLIENT_NODE}" ] ; then
         LOCAL_CLIENT_NODE=${NODE}
-        echo "LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE} because node requested"
+        [ "$FT_DEBUG" == true ] && echo "    LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE} because node requested"
       # If this node was requested and REMOTE_CLIENT_NODE_LIST is blank (because Client Only Mode
       # and there is no Server Node, which is the default), then use this node as Remote Client.
       elif [ "$FT_REQ_REMOTE_CLIENT_NODE" == "${NODE}" ] && [ -z "${REMOTE_CLIENT_NODE_LIST}" ] ; then
         REMOTE_CLIENT_NODE_LIST+=(${NODE})
-        echo "REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because node requested"
+        [ "$FT_DEBUG" == true ] && echo "    REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because node requested"
       # If LOCAL_CLIENT_NODE is blank (because Client Only Mode and there is no Server Node,
       # which is the default), then use this node as Local Client.
       elif [ -z "${LOCAL_CLIENT_NODE}" ] ; then
         LOCAL_CLIENT_NODE=${NODE}
-        echo "LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE} because next available"
+        [ "$FT_DEBUG" == true ] && echo "    LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE} because next available"
       # Otherwise if this was the requested Remote Client or the first node requested,
       # and make sure it doesn't overlap with Server Node.
       elif [ ${#REMOTE_CLIENT_NODE_LIST[@]} -eq 0 ] && [ "$FT_REQ_REMOTE_CLIENT_NODE" == "first" ] || [ "$FT_REQ_REMOTE_CLIENT_NODE" == "${NODE}" ]; then
         if [ "$LOCAL_CLIENT_NODE" != "${NODE}" ]; then
           REMOTE_CLIENT_NODE_LIST=(${NODE})
-          echo "REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because next available and first or specific requested"
+          [ "$FT_DEBUG" == true ] && echo "    REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because next available and first or specific requested"
         fi
       # Otherwise if all was requested, and make sure it doesn't overlap with Server Node.
       elif [ "$FT_REQ_REMOTE_CLIENT_NODE" == "all" ]; then
         if [ "$LOCAL_CLIENT_NODE" != "${NODE}" ]; then
           REMOTE_CLIENT_NODE_LIST+=(${NODE})
-          echo "REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because all requested"
+          [ "$FT_DEBUG" == true ] && echo "    REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]} because all requested"
         fi
       fi
     fi
-    echo
   done
 
-  echo "Summary:"
-  echo "  LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE}"
-  echo "  REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]}"
-  echo
+  if [ "$FT_DEBUG" == true ]; then
+    echo "  Summary:"
+    echo "    LOCAL_CLIENT_NODE=${LOCAL_CLIENT_NODE}"
+    echo "    REMOTE_CLIENT_NODE_LIST=${REMOTE_CLIENT_NODE_LIST[@]}"
+    echo
+  fi
 
   for NODE in "${REMOTE_CLIENT_NODE_LIST[@]}"
   do
@@ -454,7 +500,7 @@ query-dynamic-data() {
   #
   # Determine Local and Remote Pods
   #
-  echo "Determine Local and Remote Pods:"
+  [ "$FT_DEBUG" == true ] && echo "Determine Local and Remote Pods:"
 
   LOCAL_CLIENT_HOST_POD=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${CLIENT_HOST_POD_NAME_PREFIX} -o wide | grep -w "${LOCAL_CLIENT_NODE}" | awk -F' ' '{print $1}')
   if [ "$FT_HOSTONLY" == false ]; then
@@ -471,12 +517,14 @@ query-dynamic-data() {
     fi
   done
 
-  echo "Summary:"
-  echo "  LOCAL_CLIENT_HOST_POD=${LOCAL_CLIENT_HOST_POD}"
-  echo "  REMOTE_CLIENT_HOST_POD_LIST=${REMOTE_CLIENT_HOST_POD_LIST[@]}"
-  echo "  LOCAL_CLIENT_POD=${LOCAL_CLIENT_POD}"
-  echo "  REMOTE_CLIENT_POD_LIST=${REMOTE_CLIENT_POD_LIST[@]}"
-  echo
+  if [ "$FT_DEBUG" == true ]; then
+    echo "  Summary:"
+    echo "    LOCAL_CLIENT_HOST_POD=${LOCAL_CLIENT_HOST_POD}"
+    echo "    REMOTE_CLIENT_HOST_POD_LIST=${REMOTE_CLIENT_HOST_POD_LIST[@]}"
+    echo "    LOCAL_CLIENT_POD=${LOCAL_CLIENT_POD}"
+    echo "    REMOTE_CLIENT_POD_LIST=${REMOTE_CLIENT_POD_LIST[@]}"
+    echo
+  fi
 
   #
   # Determine IP Addresses and Ports
@@ -488,54 +536,43 @@ query-dynamic-data() {
     HTTP_SERVER_HOST_IP=$(echo "${TMP_GET_PODS_STR}" | grep $HTTP_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}')
     IPERF_SERVER_HOST_IP=$(echo "${TMP_GET_PODS_STR}" | grep $IPERF_SERVER_HOST_POD_NAME  | awk -F' ' '{print $6}')
 
-    HTTP_CLUSTERIP_HOST_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}')
+    HTTP_CLUSTERIP_HOST_SVC_IPV4_LIST=($(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'))
     HTTP_CLUSTERIP_HOST_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}')
+    HTTP_CLUSTERIP_HOST_SVC_CLUSTER_LIST=($MY_CLUSTER)
 
-    HTTP_NODEPORT_HOST_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}')
+    HTTP_NODEPORT_HOST_SVC_IPV4_LIST=($(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'))
     HTTP_NODEPORT_HOST_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}')
+    HTTP_NODEPORT_HOST_SVC_CLUSTER_LIST=($MY_CLUSTER)
 
-    IPERF_CLUSTERIP_HOST_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}')
+    IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST=($(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $3}'))
     IPERF_CLUSTERIP_HOST_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}')
+    IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST=($MY_CLUSTER)
 
-    IPERF_NODEPORT_HOST_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}')
+    IPERF_NODEPORT_HOST_SVC_IPV4_LIST=($(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $3}'))
     IPERF_NODEPORT_HOST_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_HOST_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}')
+    IPERF_NODEPORT_HOST_SVC_CLUSTER_LIST=($MY_CLUSTER)
 
     if [ "$FT_HOSTONLY" == false ]; then
       HTTP_SERVER_POD_IP=$(echo "${TMP_GET_PODS_STR}" | grep $HTTP_SERVER_POD_NAME  | awk -F' ' '{print $6}')
       IPERF_SERVER_POD_IP=$(echo "${TMP_GET_PODS_STR}" | grep $IPERF_SERVER_POD_NAME  | awk -F' ' '{print $6}')
 
-      HTTP_CLUSTERIP_POD_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}')
+      HTTP_CLUSTERIP_POD_SVC_IPV4_LIST=($(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'))
       HTTP_CLUSTERIP_POD_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F/ '{print $1}')
+      HTTP_CLUSTERIP_POD_SVC_CLUSTER_LIST=($MY_CLUSTER)
 
-      HTTP_NODEPORT_POD_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $3}')
+      HTTP_NODEPORT_POD_SVC_IPV4_LIST=($(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $3}'))
       HTTP_NODEPORT_POD_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $HTTP_NODEPORT_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}')
+      HTTP_NODEPORT_POD_SVC_CLUSTER_LIST=($MY_CLUSTER)
 
-      IPERF_CLUSTERIP_POD_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}')
+      IPERF_CLUSTERIP_POD_SVC_IPV4_LIST=($(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $3}'))
       IPERF_CLUSTERIP_POD_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_CLUSTERIP_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F'/' '{print $1}')
+      IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST=($MY_CLUSTER)
 
-      IPERF_NODEPORT_POD_SVC_IPV4=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $3}')
+      IPERF_NODEPORT_POD_SVC_IPV4_LIST=($(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $3}'))
       IPERF_NODEPORT_POD_SVC_PORT=$(echo "${TMP_GET_SERVICES_STR}" | grep $IPERF_NODEPORT_POD_SVC_NAME | awk -F' ' '{print $5}' | awk -F: '{print $2}' | awk -F'/' '{print $1}')
-    else
-      HTTP_SERVER_POD_IP=
-      IPERF_SERVER_POD_IP=
-
-      HTTP_CLUSTERIP_POD_SVC_IPV4=
-      HTTP_CLUSTERIP_POD_SVC_PORT=
-
-      HTTP_NODEPORT_POD_SVC_IPV4=
-      HTTP_NODEPORT_POD_SVC_PORT=
-
-      IPERF_CLUSTERIP_POD_SVC_IPV4=
-      IPERF_CLUSTERIP_POD_SVC_PORT=
-
-      IPERF_NODEPORT_POD_SVC_IPV4=
-      IPERF_NODEPORT_POD_SVC_PORT=
+      IPERF_NODEPORT_POD_SVC_CLUSTER_LIST=($MY_CLUSTER)
     fi
   else
-    # No Server Values
-    HTTP_SERVER_HOST_IP=
-    IPERF_SERVER_HOST_IP=
-
     # Client Only is true, so no Server Pods and Services are imported.
     #
     # $ kubectl get serviceimports --no-headers=true -n submariner-operator
@@ -558,64 +595,80 @@ query-dynamic-data() {
 
     TMP_SVC_IMPORTS=$(kubectl get serviceimports --no-headers=true -n ${FT_MC_NAMESPACE})
     if [[ ! -z "$TMP_SVC_IMPORTS" ]] ; then
-      # There can be multiple Clusters to send to. Initially just sending to the first one found.
-      # i.e.: Using ${TMP_SVC_NAME_LIST[0]} instead of looping through each service name.
-      # Later, add support for sending to all of them. Sample code for pulling out Cluster Name:
-      #for i in "${!TMP_SVC_NAME_LIST[@]}"
-      #do
-      #  CLUSTER_NAME=${TMP_SVC_NAME_LIST[i]#"${HTTP_CLUSTERIP_HOST_SVC_NAME}-${FT_NAMESPACE}-"}
-      #done 
+      [ "$FT_DEBUG" == true ] && echo "Determine Client-Only Service Import Values:"
+
+      # There can be multiple Clusters to send to. Loop through each service name prefix
+      # (like "ft-http-service-clusterip-pod-v4"), then process each service that matches.
 
       TMP_SVC_NAME_LIST=( $(echo "${TMP_SVC_IMPORTS}" | grep ${HTTP_CLUSTERIP_HOST_SVC_NAME} | awk -F' ' '{print $1}') )
-      HTTP_CLUSTERIP_HOST_SVC_IPV4=$(echo "${TMP_SVC_IMPORTS}" | grep ${TMP_SVC_NAME_LIST[0]} | awk -F' ' '{print $3}' | awk -F\" '{print $2}')
-      HTTP_CLUSTERIP_HOST_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${TMP_SVC_NAME_LIST[0]})
+      for SVC_NAME in "${TMP_SVC_NAME_LIST[@]}"
+      do
+        HTTP_CLUSTERIP_HOST_SVC_IPV4_LIST+=($(echo "${TMP_SVC_IMPORTS}" | grep ${SVC_NAME} | awk -F' ' '{print $3}' | awk -F\" '{print $2}'))
+        HTTP_CLUSTERIP_HOST_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${SVC_NAME})
+        HTTP_CLUSTERIP_HOST_SVC_CLUSTER_LIST+=(${SVC_NAME#"${HTTP_CLUSTERIP_HOST_SVC_NAME}-${FT_NAMESPACE}-"})
+      done
 
       TMP_SVC_NAME_LIST=( $(echo "${TMP_SVC_IMPORTS}" | grep ${IPERF_CLUSTERIP_HOST_SVC_NAME} | awk -F' ' '{print $1}') )
-      IPERF_CLUSTERIP_HOST_SVC_IPV4=$(echo "${TMP_SVC_IMPORTS}" | grep ${TMP_SVC_NAME_LIST[0]} | awk -F' ' '{print $3}' | awk -F\" '{print $2}')
-      IPERF_CLUSTERIP_HOST_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${TMP_SVC_NAME_LIST[0]})
+      for SVC_NAME in "${TMP_SVC_NAME_LIST[@]}"
+      do
+        IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST+=($(echo "${TMP_SVC_IMPORTS}" | grep ${SVC_NAME} | awk -F' ' '{print $3}' | awk -F\" '{print $2}'))
+        IPERF_CLUSTERIP_HOST_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${SVC_NAME})
+        IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST+=(${SVC_NAME#"${IPERF_CLUSTERIP_HOST_SVC_NAME}-${FT_NAMESPACE}-"})
+      done
 
       if [ "$FT_HOSTONLY" == false ]; then
         TMP_SVC_NAME_LIST=( $(echo "${TMP_SVC_IMPORTS}" | grep ${HTTP_CLUSTERIP_POD_SVC_NAME} | awk -F' ' '{print $1}') )
-        HTTP_CLUSTERIP_POD_SVC_IPV4=$(echo "${TMP_SVC_IMPORTS}" | grep ${TMP_SVC_NAME_LIST[0]} | awk -F' ' '{print $3}' | awk -F\" '{print $2}')
-        HTTP_CLUSTERIP_POD_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${TMP_SVC_NAME_LIST[0]})
+        for SVC_NAME in "${TMP_SVC_NAME_LIST[@]}"
+        do
+          HTTP_CLUSTERIP_POD_SVC_IPV4_LIST+=($(echo "${TMP_SVC_IMPORTS}" | grep ${SVC_NAME} | awk -F' ' '{print $3}' | awk -F\" '{print $2}'))
+          HTTP_CLUSTERIP_POD_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${SVC_NAME})
+          HTTP_CLUSTERIP_POD_SVC_CLUSTER_LIST+=(${SVC_NAME#"${HTTP_CLUSTERIP_POD_SVC_NAME}-${FT_NAMESPACE}-"})
+        done
 
         TMP_SVC_NAME_LIST=( $(echo "${TMP_SVC_IMPORTS}" | grep ${IPERF_CLUSTERIP_POD_SVC_NAME} | awk -F' ' '{print $1}') )
-        IPERF_CLUSTERIP_POD_SVC_IPV4=$(echo "${TMP_SVC_IMPORTS}" | grep ${TMP_SVC_NAME_LIST[0]} | awk -F' ' '{print $3}' | awk -F\" '{print $2}')
-        IPERF_CLUSTERIP_POD_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${TMP_SVC_NAME_LIST[0]})
-      else
-        HTTP_CLUSTERIP_POD_SVC_IPV4=
-        #HTTP_CLUSTERIP_POD_SVC_PORT - Leave set to default instead of querying
-
-        IPERF_CLUSTERIP_POD_SVC_IPV4=
-        #IPERF_CLUSTERIP_POD_SVC_PORT - Leave set to default instead of querying
+        for SVC_NAME in "${TMP_SVC_NAME_LIST[@]}"
+        do
+          IPERF_CLUSTERIP_POD_SVC_IPV4_LIST+=($(echo "${TMP_SVC_IMPORTS}" | grep ${SVC_NAME} | awk -F' ' '{print $3}' | awk -F\" '{print $2}'))
+          IPERF_CLUSTERIP_POD_SVC_PORT=$(kubectl get serviceimports -n ${FT_MC_NAMESPACE} -o jsonpath='{.spec.ports[0].port}' ${SVC_NAME})
+          IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST+=(${SVC_NAME#"${IPERF_CLUSTERIP_POD_SVC_NAME}-${FT_NAMESPACE}-"})
+        done
       fi
     else
       echo "NO ServiceImports Detected"
-      HTTP_CLUSTERIP_HOST_SVC_IPV4=
-      #HTTP_CLUSTERIP_HOST_SVC_PORT - Leave set to default instead of querying
-
-      IPERF_CLUSTERIP_HOST_SVC_IPV4=
-      #IPERF_CLUSTERIP_HOST_SVC_PORT - Leave set to default instead of querying
-
-      HTTP_CLUSTERIP_POD_SVC_IPV4=
-      #HTTP_CLUSTERIP_POD_SVC_PORT - Leave set to default instead of querying
-
-      IPERF_CLUSTERIP_POD_SVC_IPV4=
-      #IPERF_CLUSTERIP_POD_SVC_PORT - Leave set to default instead of querying
     fi
+  fi
 
-    # Node Port not supported as exported Service
-    HTTP_NODEPORT_POD_SVC_IPV4=
-    #HTTP_NODEPORT_POD_SVC_PORT - Leave set to default instead of querying
-
-    HTTP_NODEPORT_HOST_SVC_IPV4=
-    #HTTP_NODEPORT_HOST_SVC_PORT - Leave set to default instead of querying
-
-    IPERF_NODEPORT_POD_SVC_IPV4=
-    #IPERF_NODEPORT_POD_SVC_PORT - Leave set to default instead of querying
-
-    IPERF_NODEPORT_HOST_SVC_IPV4=
-    #IPERF_NODEPORT_HOST_SVC_PORT - Leave set to default instead of querying
+  if [ "$FT_DEBUG" == true ]; then
+    echo "  Summary:"
+    echo "    HTTP_SERVER_HOST_IP=${HTTP_SERVER_HOST_IP}"
+    echo "    HTTP_CLUSTERIP_HOST_SVC_IPV4_LIST=${HTTP_CLUSTERIP_HOST_SVC_IPV4_LIST[@]}"
+    echo "    HTTP_CLUSTERIP_HOST_SVC_PORT=${HTTP_CLUSTERIP_HOST_SVC_PORT}"
+    echo "    HTTP_CLUSTERIP_HOST_CLUSTER_IPV4_LIST=${HTTP_CLUSTERIP_HOST_SVC_CLUSTER_LIST[@]}"
+    echo "    HTTP_NODEPORT_HOST_SVC_IPV4_LIST=${HTTP_NODEPORT_HOST_SVC_IPV4_LIST[@]}"
+    echo "    HTTP_NODEPORT_HOST_SVC_PORT=${HTTP_NODEPORT_HOST_SVC_PORT}"
+    echo "    HTTP_NODEPORT_HOST_SVC_CLUSTER_LIST=${HTTP_NODEPORT_HOST_CLUSTER_IPV4_LIST[@]}"
+    echo "    HTTP_SERVER_POD_IP=${HTTP_SERVER_POD_IP}"
+    echo "    HTTP_CLUSTERIP_POD_SVC_IPV4_LIST=${HTTP_CLUSTERIP_POD_SVC_IPV4_LIST[@]}"
+    echo "    HTTP_CLUSTERIP_POD_SVC_PORT=${HTTP_CLUSTERIP_POD_SVC_PORT}"
+    echo "    HTTP_CLUSTERIP_POD_SVC_CLUSTER_LIST=${HTTP_CLUSTERIP_POD_SVC_CLUSTER_LIST[@]}"
+    echo "    HTTP_NODEPORT_POD_SVC_IPV4_LIST=${HTTP_NODEPORT_POD_SVC_IPV4_LIST[@]}"
+    echo "    HTTP_NODEPORT_POD_SVC_PORT=${HTTP_NODEPORT_POD_SVC_PORT}"
+    echo "    HTTP_NODEPORT_POD_SVC_CLUSTER_LIST=${HTTP_NODEPORT_POD_SVC_CLUSTER_LIST[@]}"
+    echo "    IPERF_SERVER_HOST_IP=${IPERF_SERVER_HOST_IP}"
+    echo "    IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST=${IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[@]}"
+    echo "    IPERF_CLUSTERIP_HOST_SVC_PORT=${IPERF_CLUSTERIP_HOST_SVC_PORT}"
+    echo "    IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST=${IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST[@]}"
+    echo "    IPERF_NODEPORT_HOST_SVC_IPV4_LIST=${IPERF_NODEPORT_HOST_SVC_IPV4_LIST[@]}"
+    echo "    IPERF_NODEPORT_HOST_SVC_PORT=${IPERF_NODEPORT_HOST_SVC_PORT}"
+    echo "    IPERF_NODEPORT_HOST_SVC_CLUSTER_LIST=${IPERF_NODEPORT_HOST_SVC_CLUSTER_LIST[@]}"
+    echo "    IPERF_SERVER_POD_IP=${IPERF_SERVER_POD_IP}"
+    echo "    IPERF_CLUSTERIP_POD_SVC_IPV4_LIST=${IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[@]}"
+    echo "    IPERF_CLUSTERIP_POD_SVC_PORT=${IPERF_CLUSTERIP_POD_SVC_PORT}"
+    echo "    IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST=${IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST[@]}"
+    echo "    IPERF_NODEPORT_POD_SVC_IPV4_LIST=${IPERF_NODEPORT_POD_SVC_IPV4_LIST[@]}"
+    echo "    IPERF_NODEPORT_POD_SVC_PORT=${IPERF_NODEPORT_POD_SVC_PORT}"
+    echo "    IPERF_NODEPORT_POD_SVC_CLUSTER_LIST=${IPERF_NODEPORT_POD_SVC_CLUSTER_LIST[@]}"
+    echo
   fi
 
   # Get Kubernetes API Server Data
