@@ -102,6 +102,13 @@ KUBEAPI_SERVER_STRING=${KUBEAPI_SERVER_STRING:-"serverAddressByClientCIDRs"}
 
 
 # Local Variables not intended to be overwritten
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+IPERF_LOGS_DIR="iperf-logs"
+OVN_TRACE_LOGS_DIR="ovn-traces"
+
 LOCAL_CLIENT_NODE=
 LOCAL_CLIENT_POD=
 LOCAL_CLIENT_HOST_POD=
