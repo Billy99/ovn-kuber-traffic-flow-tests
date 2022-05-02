@@ -28,7 +28,7 @@ This repository contains the yaml files and test scripts to test all the traffic
   - [mclaunch.sh](#mclaunchsh)
   - [mctest.sh](#mctestsh)
   - [mccleanup.sh](#mccleanupsh)
-
+  - [mcpathtest.sh](#mcpathtestsh)
 
 ## Different Traffic Flows Tested
 
@@ -744,6 +744,8 @@ For Multi-Cluster, the following scripts have been added:
 * *'mclaunch.sh'* - Loops through all existing clusters and calls *'launch.sh'*.
 * *'mctest.sh'* - Loops through all existing clusters and calls *'test.sh'*
 * *'mccleanup.sh'* - Loops through all existing clusters and calls *'cleanup.sh'*
+* *'mcpathtest.sh'* - Loops through all existing clusters tests that a given client
+    can reach the server via each combination of Gateways.
 
 By default, the basic Flow-Tester deployment is launched in the "default" namespace,
 but can be overwritten using the `FT_NAMESPACE` environment variable. All the new
@@ -812,4 +814,175 @@ causes the script to loop through all of the Client Pods that aren't on the same
 Flow-Tester is deployed on.
 ```
    ./mccleanup.sh
+```
+
+### mcpathtest.sh
+
+*'mcpathtest.sh'* - Loops through all existing clusters searching for each cluster in `Client-Only Mode`
+(no Server Pods running). It then loops through each existing cluster and finds each cluster in `Full Mode`
+(with Server Pods running). So every "CO-Cluster" will send packets to every "Full Cluster".
+
+```
+--------------------------------------------------------------
+                     cluster2 --> cluster1
+                     (Client)     (Server)
+--------------------------------------------------------------
+
+                          (2)     (5)
+                  +--------+       +--------+
+                  | Clnt-Y |-------|        |
+         (1)  +---|  GW-A  |       |  GW-D  |---+
+ +--------+   |   |        |---+ +-|        |   |   +--------+
+ |        |---+   +--------+   | | +--------+   +---|        |
+ | Clnt-X |                  +-|-+                  | Server |
+ |        |---+   +--------+ | |   +--------+   +---|        |
+ +--------+   |   |        |-+ +---|        |   |   +--------+
+              +---|  GW-B  |       |  GW-C  |---+
+                  |        |-------|        |
+                  +--------+       +--------+
+                          (3)     (4)
+```
+
+It then analyses each cluster (CO and Full), finding the nodes the Gateways are on. GW-A and GW-B are on
+the CO Cluster. GW-C and GW-D are on the Full Cluster. There will always be a GW-A and GW-D. GWBC and
+GW-C may or may not be there depending on the deployment.
+
+It then finds the node the Server is on. If the Server overlaps with a Gateway, it will always be labeled
+GW-D.
+
+It then finds a Client Pod that is on a node of one of the Gateways (Clnt-Y). The Gateway with Clnt-Y will
+always be labeled GW-A. It then finds a Client Pod that is not on the same node as any of the Gateways
+(Clnt-X), if it exists.
+
+It then modifies the multi-hop routes (routes used to load balance between Gateways) by removing one of the
+hops, which forces the packets through a given Gateway. The multi-hop routes are labeled (1) - (5).
+The script runs a Curl from the Host back Client Pod and Pod back Client Pod for Client-X to the exported
+Service. Then repeats for Clnt-Y. It then adjusts the routes and repeats until each of the following
+combination of paths are tested:
+
+* PATH 01: A-D -- D-A
+* PATH 02: A-D -- D-B
+* PATH 03: A-C -- C-A
+* PATH 04: A-C -- C-B
+* PATH 05: B-D -- D-B
+* PATH 06: B-D -- D-A
+* PATH 07: B-C -- C-B
+* PATH 08: B-C -- C-A
+
+Once all the Paths have been tested, all the routes are restored and the script finds the next set of 
+clusters to test.
+
+To test all combinations (which is the default), use:
+
+```
+   ./mcpathtest.sh
+```
+
+There are variables to control how the script runs:
+
+* 'TEST_PATH': Defaults to 0 (which means all). Set to a value 1 to 8 to only test a given path.
+* 'FT_CO_CLUSTER': Defaults to "" (which means all). Set to the cluster name if a Client-Only cluster
+   to only test a given cluster.
+* 'FT_FULL_CLUSTER': Defaults to "" (which means all). Set to the cluster name if a Full cluster
+   to only test a given cluster.
+* 'FT_DEBUG': Defaults to false. Set to true to debug the script.
+* 'PRINT_DBG_CMDS': Defaults to false. Set to true to print additional commands to aid in seeing packets
+   flow through the Gateways.
+
+Example:
+```
+
+$ PRINT_DBG_CMDS=true FT_FULL_CLUSTER=cluster1 FT_CO_CLUSTER=cluster2 TEST_PATH=4 ./mcpathtest.sh
+
+
+----------------------
+Analyzing Clusters
+----------------------
+
+Looping through Cluster List Analyzing ( entries):
+ Analyzing Cluster 1: cluster1
+  Broker is on cluster1
+   Leaving Globalnet flag as false
+ Analyzing Cluster 2: cluster2
+  Broker not on cluster2
+ Analyzing Cluster 3: cluster3
+  Broker not on cluster3
+ Analyzing Cluster 4: cluster4
+  Broker not on cluster4
+
+Looping through Cluster List, Test "Client Only" Clusters:
+
+--------------------------------------------------------------
+                     cluster2 --> cluster1
+                     (Client)     (Server)
+--------------------------------------------------------------
+
+                          (2)     (5)
+                  +--------+       +--------+
+                  | Clnt-Y |-------|  Server|
+         (1)  +---|  GW-A  |       |  GW-D  |
+ +--------+   |   |        |---+ +-|        |
+ |        |---+   +--------+   | | +--------+
+ | Clnt-X |                  +-|-+
+ |        |---+   +--------+ | |   +--------+
+ +--------+   |   |        |-+ +---|        |
+              +---|  GW-B  |       |  GW-C  |
+                  |        |-------|        |
+                  +--------+       +--------+
+                          (3)     (4)
+
+ Clnt-X: cluster2-worker3: ft-client-pod-vxxdd and ft-client-pod-host-wl52h
+ Clnt-Y: cluster2-worker2: ft-client-pod-c4f6h and ft-client-pod-host-4hjx5
+ GW-A:   cluster2-worker2 172.18.0.9
+  docker exec -ti cluster2-worker2 /bin/bash
+ GW-B:   cluster2-worker 172.18.0.10
+  docker exec -ti cluster2-worker /bin/bash
+ GW-C:   cluster1-worker2 172.18.0.18
+  docker exec -ti cluster1-worker2 /bin/bash
+ GW-D:   cluster1-worker 172.18.0.16
+  docker exec -ti cluster1-worker /bin/bash
+  apt-get update
+  apt-get install -y tcpdump
+  ip route list table all > iproutelist.orig
+  tcpdump -neep -i any host 100.1.18.136
+ Srvr:   SVC-Pod: 100.1.18.136:8080  SVC-Host: 100.1.17.117:8079
+ CIDR:   10.2.0.0/16 100.1.0.0/16
+ Globalnet=false Server/ClientOverlap=true
+
+
+PATH 04: A-C -- C-B
+-------------------
+
+*** 4-a: Clnt-X to Service Endpoint:Port ***
+    Clnt-X -> GW-A -> GW-C -> GW-D -> Svr  U  Svr -> GW-D -> GW-C -> GW-B -> Clnt-X
+
+curl SvcClusterIP:SvcPORT (Pod Backend)
+cluster2:cluster2-worker3 -> cluster1:cluster1-worker
+kubectl exec -it -n flow-test ft-client-pod-vxxdd -- curl -m 5 "http://100.1.18.136:8080/etc/httpserver/"
+SUCCESS
+
+curl SvcClusterIP:SvcPORT (Host Backend)
+cluster2:cluster2-worker3 -> cluster1:cluster1-worker
+kubectl exec -it -n flow-test ft-client-pod-host-wl52h -- curl -m 5 "http://100.1.17.117:8079/etc/httpserver/"
+SUCCESS
+
+
+*** 4-b: Clnt-Y to Service Endpoint:Port ***
+    Clnt-Y/GW-A -> GW-C -> GW-D -> Svr  U  Svr -> GW-D -> GW-C -> GW-B -> GW-A/Clnt-Y
+
+curl SvcClusterIP:SvcPORT (Pod Backend)
+cluster2:cluster2-worker2 -> cluster1:cluster1-worker
+kubectl exec -it -n flow-test ft-client-pod-c4f6h -- curl -m 5 "http://100.1.18.136:8080/etc/httpserver/"
+SUCCESS
+
+curl SvcClusterIP:SvcPORT (Host Backend)
+cluster2:cluster2-worker2 -> cluster1:cluster1-worker
+kubectl exec -it -n flow-test ft-client-pod-host-4hjx5 -- curl -m 5 "http://100.1.17.117:8079/etc/httpserver/"
+SUCCESS
+
+
+FT_FULL_CLUSTER=cluster1 so skipping over cluster3
+FT_CO_CLUSTER=cluster2 so skipping over cluster4
+
+Switched to context "cluster1".
 ```
