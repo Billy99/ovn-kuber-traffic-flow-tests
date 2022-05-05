@@ -76,5 +76,6 @@ if [ "$FT_CLIENTONLY" == false ]; then
   kubectl apply -f ./manifests/yamls/iperf-server-pod-v4-host.yaml
 fi
 kubectl apply -f ./manifests/yamls/client-daemonSet-host.yaml
+kubectl apply -f ./manifests/yamls/tools-daemonSet.yaml
 
 manage_multi_cluster

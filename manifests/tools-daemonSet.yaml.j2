@@ -1,0 +1,29 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ft-tools
+  namespace: {{ namespace }}
+  labels:
+    app: ft-tools
+spec:
+  selector:
+    matchLabels:
+      name: ft-tools
+  template:
+    metadata:
+      labels:
+        name: ft-tools
+        app: ft-tools
+    spec:
+      hostNetwork: true
+      containers:
+      - name: ft-tools
+        image: nicolaka/netshoot
+        command:
+          - /sbin/init
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
+      nodeSelector:
+        ft.ClientPod: client
