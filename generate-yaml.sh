@@ -63,6 +63,14 @@ generate_yamls() {
   j2 "./manifests/client-daemonSet.yaml.j2" -o "./manifests/yamls/client-daemonSet.yaml"
 
   #
+  # Tools Pods
+  #
+
+  # tool-daemonSet.yaml
+  namespace=${FT_NAMESPACE} \
+  j2 "./manifests/tools-daemonSet.yaml.j2" -o "./manifests/yamls/tools-daemonSet.yaml"
+
+  #
   # http Server Pods
   #
 

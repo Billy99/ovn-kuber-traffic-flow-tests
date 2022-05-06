@@ -137,22 +137,27 @@ printCluster() {
   if [[ ! -z "${FT_CLNT_X_POD_NAME[$CLUSTER_CO_INDEX]}" ]]; then
     echo " Clnt-X: ${FT_CLNT_X_NODE_NAME[$CLUSTER_CO_INDEX]}: ${FT_CLNT_X_POD_NAME[$CLUSTER_CO_INDEX]} and ${FT_CLNT_X_HOST_POD_NAME[$CLUSTER_CO_INDEX]}"
   fi
+
   echo " Clnt-Y: ${FT_CLNT_Y_NODE_NAME[$CLUSTER_CO_INDEX]}: ${FT_CLNT_Y_POD_NAME[$CLUSTER_CO_INDEX]} and ${FT_CLNT_Y_HOST_POD_NAME[$CLUSTER_CO_INDEX]}"
-  echo " GW-A:   ${SUB_GW_AD_NODE_NAME[$CLUSTER_CO_INDEX]} ${SUB_GW_AD_IPADDR[$CLUSTER_CO_INDEX]}"
+
+  echo " GW-A:   ${SUB_GW_AD_NODE_NAME[$CLUSTER_CO_INDEX]} ${SUB_GW_AD_IPADDR[$CLUSTER_CO_INDEX]} ${SUB_GW_AD_TOOLS_POD_NAME[$CLUSTER_CO_INDEX]}"
   [ "$PRINT_DBG_CMDS" == true ] && [ ! -z "${SUB_GW_AD_NODE_NAME[$CLUSTER_CO_INDEX]}" ] && \
     echo "  docker exec -ti ${SUB_GW_AD_NODE_NAME[$CLUSTER_CO_INDEX]} /bin/bash"
-  echo " GW-B:   ${SUB_GW_BC_NODE_NAME[$CLUSTER_CO_INDEX]} ${SUB_GW_BC_IPADDR[$CLUSTER_CO_INDEX]}"
+
+  echo " GW-B:   ${SUB_GW_BC_NODE_NAME[$CLUSTER_CO_INDEX]} ${SUB_GW_BC_IPADDR[$CLUSTER_CO_INDEX]} ${SUB_GW_BC_TOOLS_POD_NAME[$CLUSTER_CO_INDEX]}"
   [ "$PRINT_DBG_CMDS" == true ] && [ ! -z "${SUB_GW_BC_NODE_NAME[$CLUSTER_CO_INDEX]}" ] && \
     echo "  docker exec -ti ${SUB_GW_BC_NODE_NAME[$CLUSTER_CO_INDEX]} /bin/bash"
-  echo " GW-C:   ${SUB_GW_BC_NODE_NAME[$CLUSTER_FULL_INDEX]} ${SUB_GW_BC_IPADDR[$CLUSTER_FULL_INDEX]}"
+
+  echo " GW-C:   ${SUB_GW_BC_NODE_NAME[$CLUSTER_FULL_INDEX]} ${SUB_GW_BC_IPADDR[$CLUSTER_FULL_INDEX]} ${SUB_GW_BC_TOOLS_POD_NAME[$CLUSTER_FULL_INDEX]}"
   [ "$PRINT_DBG_CMDS" == true ] && [ ! -z "${SUB_GW_BC_NODE_NAME[$CLUSTER_FULL_INDEX]}" ] && \
     echo "  docker exec -ti ${SUB_GW_BC_NODE_NAME[$CLUSTER_FULL_INDEX]} /bin/bash"
+
   if [[ "$SUB_GW_AND_SERVER_OVERLAP[$CLUSTER_FULL_INDEX]" == true ]]; then
-    echo " GW-D:   ${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]} ${SUB_GW_AD_IPADDR[$CLUSTER_FULL_INDEX]} ${FT_SERVICE_POD_IP[$CLUSTER_FULL_INDEX]}:${FT_SERVICE_POD_PORT[$CLUSTER_FULL_INDEX]} ${FT_SERVICE_HOST_POD_IP[$CLUSTER_FULL_INDEX]}:${FT_SERVICE_HOST_POD_PORT[$CLUSTER_FULL_INDEX]}"
+    echo " GW-D:   ${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]} ${SUB_GW_AD_IPADDR[$CLUSTER_FULL_INDEX]} ${SUB_GW_AD_TOOLS_POD_NAME[$CLUSTER_FULL_INDEX]} ${FT_SERVICE_POD_IP[$CLUSTER_FULL_INDEX]}:${FT_SERVICE_POD_PORT[$CLUSTER_FULL_INDEX]} ${FT_SERVICE_HOST_POD_IP[$CLUSTER_FULL_INDEX]}:${FT_SERVICE_HOST_POD_PORT[$CLUSTER_FULL_INDEX]}"
     [ "$PRINT_DBG_CMDS" == true ] && [ ! -z "${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]}" ] && \
       echo "  docker exec -ti ${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]} /bin/bash"
   else
-    echo " GW-D:   ${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]} ${SUB_GW_AD_IPADDR[$CLUSTER_FULL_INDEX]}"
+    echo " GW-D:   ${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]} ${SUB_GW_AD_IPADDR[$CLUSTER_FULL_INDEX]} ${SUB_GW_AD_TOOLS_POD_NAME[$CLUSTER_FULL_INDEX]}"
     [ "$PRINT_DBG_CMDS" == true ] && [ ! -z "${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]}" ] && \
       echo "  docker exec -ti ${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]} /bin/bash" &&
       echo "  apt-get update" &&
@@ -173,36 +178,52 @@ getRouteParams() {
 
   case "${LIST_NUM}" in
     1)
-      CLUSTER_NODE="${FT_CLNT_X_NODE_NAME[$CLUSTER_CO_INDEX]}"
+      CLUSTER_INDEX="${CLUSTER_CO_INDEX}"
+      TOOLS_POD_NAME="${FT_CLNT_X_TOOLS_POD_NAME[$CLUSTER_INDEX]}"
+      CLUSTER_NODE="${FT_CLNT_X_NODE_NAME[$CLUSTER_INDEX]}"
       SERVICE_CIDR="${FT_CIDR_SVC_OR_CLUSTER[$CLUSTER_FULL_INDEX]}"
       ROUTE_TABLE="all"
       ;;
     2)
-      CLUSTER_NODE="${SUB_GW_AD_NODE_NAME[$CLUSTER_CO_INDEX]}"
+      CLUSTER_INDEX="${CLUSTER_CO_INDEX}"
+      TOOLS_POD_NAME="${SUB_GW_AD_TOOLS_POD_NAME[$CLUSTER_INDEX]}"
+      CLUSTER_NODE="${SUB_GW_AD_NODE_NAME[$CLUSTER_INDEX]}"
       SERVICE_CIDR="${FT_CIDR_SVC_OR_CLUSTER[$CLUSTER_FULL_INDEX]}"
       ROUTE_TABLE="100"
       ;;
     3)
-      CLUSTER_NODE="${SUB_GW_BC_NODE_NAME[$CLUSTER_CO_INDEX]}"
+      CLUSTER_INDEX="${CLUSTER_CO_INDEX}"
+      TOOLS_POD_NAME="${SUB_GW_BC_TOOLS_POD_NAME[$CLUSTER_INDEX]}"
+      CLUSTER_NODE="${SUB_GW_BC_NODE_NAME[$CLUSTER_INDEX]}"
       SERVICE_CIDR="${FT_CIDR_SVC_OR_CLUSTER[$CLUSTER_FULL_INDEX]}"
       ROUTE_TABLE="100"
       ;;
     4)
-      CLUSTER_NODE="${SUB_GW_BC_NODE_NAME[$CLUSTER_FULL_INDEX]}"
+      CLUSTER_INDEX="${CLUSTER_FULL_INDEX}"
+      TOOLS_POD_NAME="${SUB_GW_BC_TOOLS_POD_NAME[$CLUSTER_INDEX]}"
+      CLUSTER_NODE="${SUB_GW_BC_NODE_NAME[$CLUSTER_INDEX]}"
       SERVICE_CIDR="${FT_CIDR_SVC_OR_CLUSTER[$CLUSTER_CO_INDEX]}"
       ROUTE_TABLE="100"
       ;;
     5)
-      CLUSTER_NODE="${SUB_GW_AD_NODE_NAME[$CLUSTER_FULL_INDEX]}"
+      CLUSTER_INDEX="${CLUSTER_FULL_INDEX}"
+      TOOLS_POD_NAME="${SUB_GW_AD_TOOLS_POD_NAME[$CLUSTER_INDEX]}"
+      CLUSTER_NODE="${SUB_GW_AD_NODE_NAME[$CLUSTER_INDEX]}"
       SERVICE_CIDR="${FT_CIDR_SVC_OR_CLUSTER[$CLUSTER_CO_INDEX]}"
       ROUTE_TABLE="100"
       ;;
     *)
+      CLUSTER_INDEX=""
+      TOOLS_POD_NAME=""
       CLUSTER_NODE=""
       SERVICE_CIDR=""
       ROUTE_TABLE=""
       ;;
   esac
+
+  if [[ ! -z "${CLUSTER_INDEX}" ]]; then
+    kubectl config use-context "${CLUSTER_ARRAY[$CLUSTER_INDEX]}" &>/dev/null
+  fi
 }
 
 getNexthopRoute() {
@@ -213,13 +234,12 @@ getNexthopRoute() {
 
   getRouteParams "${CLUSTER_CO_INDEX}" "${CLUSTER_FULL_INDEX}" "${LIST_NUM}"
 
-  [ "$FT_DEBUG" == true ] && echo "  ENTER: getNexthopRoute() for ${CLUSTER_NODE} (${LIST_NUM})"
+  [ "$FT_DEBUG" == true ] && echo "  ENTER: getNexthopRoute() for ${CLUSTER_ARRAY[$CLUSTER_INDEX]}:${CLUSTER_NODE} (${LIST_NUM})"
 
-  CMD1="ip route list table ${ROUTE_TABLE}"
-  CMD2="grep ${SERVICE_CIDR} -A 2"
-  [ "$FT_DEBUG" == true ] && echo "   docker exec -ti ${CLUSTER_NODE} '${CMD1} | ${CMD2}'"
+  CMD="ip route list table ${ROUTE_TABLE} | grep ${SERVICE_CIDR} -A 2"
+  [ "$FT_DEBUG" == true ] && echo "   kubectl exec -ti -n ${FT_NAMESPACE} ${TOOLS_POD_NAME} -- /bin/sh -c \"${CMD}\""
 
-  local TMP_ROUTE=$(docker exec -e TMP_CMD1="${CMD1}" -e TMP_CMD2="${CMD2}" -ti "${CLUSTER_NODE}" /bin/sh -c '${TMP_CMD1} | ${TMP_CMD2}')
+  local TMP_ROUTE=$( kubectl exec -ti -n "${FT_NAMESPACE}" "${TOOLS_POD_NAME}" -- /bin/sh -c "${CMD}")
   TMP_ROUTE=${TMP_ROUTE//"pervasive"/}
 
   # Split line of the return string into array elements
@@ -250,7 +270,7 @@ setNexthopRoute() {
 
   getRouteParams "${CLUSTER_CO_INDEX}" "${CLUSTER_FULL_INDEX}" "${LIST_NUM}"
 
-  [ "$FT_DEBUG" == true ] && echo "  ENTER: setNexthopRoute() for ${CLUSTER_NODE} (${LIST_NUM})"
+  [ "$FT_DEBUG" == true ] && echo "  ENTER: setNexthopRoute() for ${CLUSTER_ARRAY[$CLUSTER_INDEX]}:${CLUSTER_NODE} (${LIST_NUM})"
 
   if [[ -z "${ROUTE_LIST[2]}" ]]; then
     echo "   Update route FAILED for ${CLUSTER_NODE} - Needs to have at least 2 Nexthop Groups"
@@ -273,9 +293,9 @@ setNexthopRoute() {
       fi
 
       CMD="ip route replace ${TABLE_STR}${ROUTE_LIST[0]} ${ROUTE_LIST[$i]}"
-      [ "$FT_DEBUG" == true ] && echo "   docker exec -ti ${CLUSTER_NODE} '${CMD}'"
-      docker exec -e TMP_CMD="${CMD}" -ti "${CLUSTER_NODE}" /bin/sh -c '${TMP_CMD}'
 
+      [ "$FT_DEBUG" == true ] && echo "   kubectl exec -ti -n ${FT_NAMESPACE} ${TOOLS_POD_NAME} -- /bin/sh -c \"${CMD}\""
+      kubectl exec -ti -n "${FT_NAMESPACE}" "${TOOLS_POD_NAME}" -- /bin/sh -c "${CMD}"
       if [ "$?" == 1 ]; then
         echo "   Update route FAILED for ${CLUSTER_NODE} - Command failed"
       else
@@ -303,8 +323,7 @@ restoreNexthopRoute() {
 
   getRouteParams "${CLUSTER_CO_INDEX}" "${CLUSTER_FULL_INDEX}" "${LIST_NUM}"
 
-
-  [ "$FT_DEBUG" == true ] && echo "  ENTER: restoreNexthopRoute() for ${CLUSTER_NODE} (${LIST_NUM})"
+  [ "$FT_DEBUG" == true ] && echo "  ENTER: restoreNexthopRoute() for ${CLUSTER_ARRAY[$CLUSTER_INDEX]}:${CLUSTER_NODE} (${LIST_NUM})"
 
   if [[ -z "${ROUTE_LIST[2]}" ]]; then
     echo "   Restore routes FAILED for ${CLUSTER_NODE} - Needs to have at least 2 Nexthop Groups"
@@ -320,8 +339,9 @@ restoreNexthopRoute() {
     CMD+=" ${ROUTE_LIST[$index]}"
   done
 
-  [ "$FT_DEBUG" == true ] && echo "   docker exec -ti ${CLUSTER_NODE} '${CMD}'"
-  docker exec -e TMP_CMD="${CMD}" -ti "${CLUSTER_NODE}" sh -c '${TMP_CMD}'
+
+  [ "$FT_DEBUG" == true ] && echo "   kubectl exec -ti -n ${FT_NAMESPACE} ${TOOLS_POD_NAME} -- /bin/sh -c \"${CMD}\""
+  kubectl exec -ti -n "${FT_NAMESPACE}" "${TOOLS_POD_NAME}" -- /bin/sh -c "${CMD}"
   if [ "$?" == 1 ]; then
     echo "   Restore routes FAILED for ${CLUSTER_NODE} - Command failed"
   else
@@ -333,6 +353,8 @@ testClntX() {
   local CLUSTER_CO_INDEX=$1
   local CLUSTER_FULL_INDEX=$2
   local FILENAME=$3
+
+  kubectl config use-context "${CLUSTER_ARRAY[$CLUSTER_CO_INDEX]}" &>/dev/null
 
   TEST_CLIENT_NODE="${FT_CLNT_X_NODE_NAME[$CLUSTER_CO_INDEX]}"
   TEST_FILENAME="${FILENAME}"
@@ -356,6 +378,8 @@ testClntY() {
   local CLUSTER_CO_INDEX=$1
   local CLUSTER_FULL_INDEX=$2
   local FILENAME=$3
+
+  kubectl config use-context "${CLUSTER_ARRAY[$CLUSTER_CO_INDEX]}" &>/dev/null
 
   TEST_CLIENT_NODE="${FT_CLNT_Y_NODE_NAME[$CLUSTER_CO_INDEX]}"
   TEST_FILENAME="${FILENAME}"
@@ -454,9 +478,15 @@ do
     TMP_GATEWAY_IP_LIST=( $(echo "${TMP_OUTPUT}" |  awk -F' ' '{print $2}') )
     TMP_GATEWAY_NODE_LIST=( $(echo "${TMP_OUTPUT}" | awk -F' ' '{print $3}') )
 
+    # Collect the Tool Pods
+    TMP_OUTPUT=$(kubectl get pods -n ${FT_NAMESPACE} --selector=app=${FT_TOOLS_POD_NAME} -o jsonpath='{range .items[*]}{@.metadata.name}{" "}{@.spec.nodeName}{"\n"}{end}')
+    TMP_TOOLS_NAME_LIST=( $(echo "${TMP_OUTPUT}" | awk -F' ' '{print $1}') )
+    TMP_TOOLS_NODE_LIST=( $(echo "${TMP_OUTPUT}" | awk -F' ' '{print $2}') )
+
     #FT_CLNT_X_POD_NAME[$i]=
     #FT_CLNT_X_NODE_NAME[$i]=
     #FT_CLNT_X_HOST_POD_NAME[$i]=
+    #FT_CLNT_X_TOOLS_POD_NAME[$i]=
     #FT_CLNT_Y_POD_NAME[$i]=
     #FT_CLNT_Y_HOST_POD_NAME[$i]=
     #FT_CLNT_Y_NODE_NAME[$i]=
@@ -475,6 +505,8 @@ do
     #SUB_GW_BC_NODE_NAME[$i]=
     #SUB_GW_AD_IPADDR[$i]=
     #SUB_GW_BC_IPADDR[$i]=
+    #SUB_GW_AD_TOOLS_POD_NAME[$i]=
+    #SUB_GW_BC_TOOLS_NODE_NAME[$i]=
 
     # Loop through the Gateway nodes
     if [[ "${CLUSTER_MODE[$i]}" == $MODE_CO ]]; then
@@ -580,6 +612,22 @@ do
       FT_SERVICE_HOST_POD_IP[$i]=$(echo "${TMP_OUTPUT}" | awk -F' ' '{print $1}' | awk -F'\"' '{print $2}')
       FT_SERVICE_HOST_POD_PORT[$i]=$(echo "${TMP_OUTPUT}" | awk -F' ' '{print $2}')
     fi
+
+    for toolsNodeIndex in "${!TMP_TOOLS_NODE_LIST[@]}"
+    do
+      if [[ "${TMP_TOOLS_NODE_LIST[$toolsNodeIndex]}" == "${FT_CLNT_X_NODE_NAME[$i]}" ]]; then
+        FT_CLNT_X_TOOLS_POD_NAME[$i]="${TMP_TOOLS_NAME_LIST[$toolsNodeIndex]}"
+        [ "$FT_DEBUG" == true ] && echo "     ClntX: Setting ${FT_CLNT_X_TOOLS_POD_NAME[$i]} to SUB_GW_BC_TOOLS_POD_NAME for node ${SUB_GW_BC_NODE_NAME[$i]}"
+      fi
+      if [[ "${TMP_TOOLS_NODE_LIST[$toolsNodeIndex]}" == "${SUB_GW_AD_NODE_NAME[$i]}" ]]; then
+        SUB_GW_AD_TOOLS_POD_NAME[$i]="${TMP_TOOLS_NAME_LIST[$toolsNodeIndex]}"
+        [ "$FT_DEBUG" == true ] && echo "     AorD: Setting ${SUB_GW_AD_TOOLS_POD_NAME[$i]} to SUB_GW_AD_TOOLS_POD_NAME for node ${SUB_GW_AD_NODE_NAME[$i]}"
+      fi
+      if [[ "${TMP_TOOLS_NODE_LIST[$toolsNodeIndex]}" == "${SUB_GW_BC_NODE_NAME[$i]}" ]]; then
+        SUB_GW_BC_TOOLS_POD_NAME[$i]="${TMP_TOOLS_NAME_LIST[$toolsNodeIndex]}"
+        [ "$FT_DEBUG" == true ] && echo "     BorC: Setting ${SUB_GW_BC_TOOLS_POD_NAME[$i]} to SUB_GW_BC_TOOLS_POD_NAME for node ${SUB_GW_BC_NODE_NAME[$i]}"
+      fi
+    done
   else
     echo "  Flow-Test not deployed on Cluster ${CLUSTER_ARRAY[$i]}"
   fi
@@ -596,7 +644,12 @@ do
       continue
     fi
 
-    kubectl config use-context ${CLUSTER_ARRAY[$coIndex]} &>/dev/null
+    #
+    # From here to the end of loop, ping-ponging between CO and FULL Clusters for kubectl calls.
+    # So must set the context before running kubectl commands, mainly in getNexthopRoute(),
+    # setNexthopRoute() and restoreNexthopRoute().
+    #   kubectl config use-context ${CLUSTER_ARRAY[$coIndex]} &>/dev/null
+    #
 
     for fullIndex in "${!CLUSTER_ARRAY[@]}"
     do

@@ -66,6 +66,7 @@ if [ "$FT_CLIENTONLY" == false ]; then
   kubectl delete -f ./manifests/yamls/http-server-pod-v4-host.yaml
 fi
 kubectl delete -f ./manifests/yamls/client-daemonSet-host.yaml
+kubectl delete -f ./manifests/yamls/tools-daemonSet.yaml
 
 
 if [ "$FT_SRIOV_SERVER" == true ] || [ "$FT_SRIOV_CLIENT" == true ]; then
