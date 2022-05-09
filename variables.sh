@@ -7,6 +7,7 @@
 FT_REQ_REMOTE_CLIENT_NODE=${FT_REQ_REMOTE_CLIENT_NODE:-first}
 FT_REQ_SERVER_NODE=${FT_REQ_SERVER_NODE:-all}
 FT_SRIOV_NODE_LABEL=${FT_SRIOV_NODE_LABEL:-network.operator.openshift.io/external-openvswitch}
+FT_CLIENT_CPU_MASK=${FT_CLIENT_CPU_MASK:-}
 
 # Deployment Variations
 FT_HOSTONLY=${FT_HOSTONLY:-unknown}
@@ -22,7 +23,7 @@ FT_MC_CO_SERVER_LABEL=${FT_MC_CO_SERVER_LABEL:-submariner.io/gateway=true}
 # Launch specific variables
 NET_ATTACH_DEF_NAME=${NET_ATTACH_DEF_NAME:-ftnetattach}
 SRIOV_RESOURCE_NAME=${SRIOV_RESOURCE_NAME:-openshift.io/mlnx_bf}
-TEST_IMAGE=${TEST_IMAGE:-quay.io/billy99/ft-base-image:0.8}
+TEST_IMAGE=${TEST_IMAGE:-quay.io/billy99/ft-base-image:0.9}
 
 
 # Clean specific variables
@@ -186,6 +187,7 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    IPERF                              $IPERF"
   echo "    IPERF_CMD                          $IPERF_CMD"
   echo "    IPERF_TIME                         $IPERF_TIME"
+  echo "    FT_CLIENT_CPU_MASK                 $FT_CLIENT_CPU_MASK"
   echo "    OVN_TRACE                          $OVN_TRACE"
   echo "    OVN_TRACE_CMD                      $OVN_TRACE_CMD"
   echo "    FT_SVC_QUALIFIER                   $FT_SVC_QUALIFIER"
@@ -340,17 +342,20 @@ process-help() {
       echo "                                 IPERF=true ./test.sh"
       echo "  OVN_TRACE                  - 'ovn-trace' can be run on each flow, off by deafult. Example:"
       echo "                                 OVN_TRACE=true ./test.sh"
+      echo "  CURL_CMD                   - Curl command to run. Allows additional parameters to be"
+      echo "                               inserted. Example:"
+      echo "                                 CURL_CMD=\"curl -v --connect-timeout 5\" ./test.sh"
       echo "  FT_VARS                    - Print script variables. Off by default. Example:"
       echo "                                 FT_VARS=true ./test.sh"
       echo "  FT_NOTES                   - Print notes (in blue) where tests are failing but maybe shouldn't be."
       echo "                               On by default. Example:"
       echo "                                 FT_NOTES=false ./test.sh"
-      echo "  CURL_CMD                   - Curl command to run. Allows additional parameters to be"
-      echo "                               inserted. Example:"
-      echo "                                 CURL_CMD=\"curl -v --connect-timeout 5\" ./test.sh"
       echo "  FT_REQ_REMOTE_CLIENT_NODE  - Node to use when sending from client pod on different node"
       echo "                               from server. Example:"
       echo "                                 FT_REQ_REMOTE_CLIENT_NODE=ovn-worker4 ./test.sh"
+      echo "  FT_CLIENT_CPU_MASK         - CPU Mask to be used to run a \"taskset\" on command being run."
+      echo "                               Current on being used on \"iperf3\". Example:"
+      echo "                                 FT_CLIENT_CPU_MASK=0x100 TEST_CASE=1 IPERF=true CURL=false ./test.sh"
       fi
       echo "  FT_NAMESPACE               - Namespace for all pods, configMaps and services associated with"
       echo "                               Flow Tester. Defaults to \"default\" namespace. It is best to"

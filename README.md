@@ -673,6 +673,14 @@ drwxrwxr-x. 7 user user 4096 Jun 11 15:04 ..
 *'test.sh'* overwrites the previous test run. They can be removed manually or using
 `CLEAN_ALL=true ./cleanup.sh`.
 
+An additional variable is supported when running `iperf3` that allows the executable
+to be pinned to a CPU. The CPU Mask is calculated outside of Flow-Test and simply passed
+in and set by the script. Example:
+
+```
+FT_CLIENT_CPU_MASK=0x100 TEST_CASE=1 IPERF=true CURL=false ./test.sh
+```
+
 ### ovnkube-trace
 
 `ovnkube-trace` is a tool in upstream OVN-Kubernetes to trace packet simulations

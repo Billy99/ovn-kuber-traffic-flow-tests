@@ -1,5 +1,5 @@
 FROM k8s.gcr.io/e2e-test-images/agnhost:2.33
 USER root
-RUN apk --update add iperf3 iptables tcpdump && rm -rf /var/cache/apk/*
+RUN apk --update add iperf3 iptables tcpdump util-linux && rm -rf /var/cache/apk/*
 ENTRYPOINT trap : TERM INT; sleep infinity & wait # Listen for kill signals and exit quickly.
 
