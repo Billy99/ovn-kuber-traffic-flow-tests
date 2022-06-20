@@ -95,6 +95,7 @@ IPERF_CLUSTERIP_HOST_SVC_PORT=${IPERF_CLUSTERIP_HOST_SVC_PORT:-5202}
 IPERF_NODEPORT_POD_SVC_PORT=${IPERF_NODEPORT_POD_SVC_PORT:-30201}
 IPERF_NODEPORT_HOST_SVC_PORT=${IPERF_NODEPORT_HOST_SVC_PORT:-30202}
 
+TOOLS_POD_NAME=${TOOLS_POD_NAME:-ft-tools}
 
 SERVER_PATH=${SERVER_PATH:-"/etc/httpserver/"}
 POD_SERVER_STRING=${POD_SERVER_STRING:-"Server - Pod Backend Reached"}
@@ -441,8 +442,8 @@ query-dynamic-data() {
     # Local Client Node is the same Node Server is running on.
     LOCAL_CLIENT_NODE=$SERVER_POD_NODE
   else
-  	# In Client Only, there are no Server Nodes, so leave blank and logic below
-  	# will pick the first non-Master. 
+    # In Client Only, there are no Server Nodes, so leave blank and logic below
+    # will pick the first non-Master.
     SERVER_POD_NODE=$REMOTE
     SVCNAME_CLUSTER=$UNKNOWN
 
@@ -509,7 +510,7 @@ query-dynamic-data() {
       fi
     fi
   done
-  
+
   #
   # Determine Local and Remote Pods
   #
