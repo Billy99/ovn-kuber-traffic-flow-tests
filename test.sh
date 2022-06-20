@@ -85,10 +85,15 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ] && [ "$FT_HOSTONLY" == false ]
     process-curl
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_POD_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
-    process-iperf
+    if [ "$IPERF" == true ]; then
+      process-iperf
+    fi
+    if [ "$HWOL" == true ]; then
+      process-hw-offload-validation
+    fi
   fi
 
   if [ "$OVN_TRACE" == true ]; then
@@ -120,10 +125,15 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ] && [ "$FT_HOSTONLY" == false ]
       process-curl
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       TEST_SERVER_IPERF_DST=$IPERF_SERVER_POD_IP
       TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     fi
 
     if [ "$OVN_TRACE" == true ]; then
@@ -256,13 +266,18 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ] && [ "$FT_HOSTONLY" == false ]
     process-curl
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     for j in "${!IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[@]}"
     do
       TEST_SERVER_IPERF_DST=${IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[$j]}
       TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
       TEST_SERVER_CLUSTER=${IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST[$j]}
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     done
   fi
 
@@ -319,13 +334,18 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ] && [ "$FT_HOSTONLY" == false ]
       process-curl
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       for j in "${!IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[@]}"
       do
         TEST_SERVER_IPERF_DST=${IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[$j]}
         TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
         TEST_SERVER_CLUSTER=${IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST[$j]}
-        process-iperf
+        if [ "$IPERF" == true ]; then
+          process-iperf
+        fi
+        if [ "$HWOL" == true ]; then
+          process-hw-offload-validation
+        fi
       done
     fi
 
@@ -386,13 +406,18 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ] && [ "$FT_HOSTONLY" == false ]
     process-curl
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     for j in "${!IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[@]}"
     do
       TEST_SERVER_IPERF_DST=${IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[$j]}
       TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
       TEST_SERVER_CLUSTER=${IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST[$j]}
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     done
   fi
 
@@ -449,13 +474,18 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ] && [ "$FT_HOSTONLY" == false ]
       process-curl
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       for j in "${!IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[@]}"
       do
         TEST_SERVER_IPERF_DST=${IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[$j]}
         TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
         TEST_SERVER_CLUSTER=${IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST[$j]}
-        process-iperf
+        if [ "$IPERF" == true ]; then
+          process-iperf
+        fi
+        if [ "$HWOL" == true ]; then
+          process-hw-offload-validation
+        fi
       done
     fi
 
@@ -510,11 +540,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ] && [ "$FT_HOSTONLY" == false ]
     process-curl
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
     TEST_SERVER_CLUSTER=$MY_CLUSTER
-    process-iperf
+    if [ "$IPERF" == true ]; then
+      process-iperf
+    fi
+    if [ "$HWOL" == true ]; then
+      process-hw-offload-validation
+    fi
   fi
 
   if [ "$OVN_TRACE" == true ]; then
@@ -562,11 +597,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ] && [ "$FT_HOSTONLY" == false ]
       process-curl
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
       TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
       TEST_SERVER_CLUSTER=$MY_CLUSTER
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     fi
 
     if [ "$OVN_TRACE" == true ]; then
@@ -620,11 +660,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ] && [ "$FT_HOSTONLY" == false ]
     process-curl
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
     TEST_SERVER_CLUSTER=$MY_CLUSTER
-    process-iperf
+    if [ "$IPERF" == true ]; then
+      process-iperf
+    fi
+    if [ "$HWOL" == true ]; then
+      process-hw-offload-validation
+    fi
   fi
 
   if [ "$OVN_TRACE" == true ]; then
@@ -674,11 +719,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ] && [ "$FT_HOSTONLY" == false ]
       process-curl
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
       TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
       TEST_SERVER_CLUSTER=$MY_CLUSTER
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     fi
 
     if [ "$OVN_TRACE" == true ]; then
@@ -863,7 +913,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]
   echo
   echo "*** 9-a: Host Pod -> Cluster IP Service traffic (Pod Backend - Same Node) ***"
   echo
-  
+
   TEST_CLIENT_POD=$LOCAL_CLIENT_HOST_POD
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$SERVER_POD_NODE
@@ -900,13 +950,18 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]
     process-curl
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     for j in "${!IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[@]}"
     do
       TEST_SERVER_IPERF_DST=${IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[$j]}
       TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
       TEST_SERVER_CLUSTER=${IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST[$j]}
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     done
   fi
 
@@ -923,7 +978,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]
   echo
   echo "*** 9-b: Host Pod -> Cluster IP Service traffic (Pod Backend - Different Node) ***"
   echo
-  
+
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="09-b-host2clusterIpSvc-podBackend-diffNode.txt"
 
@@ -963,13 +1018,18 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]
       process-curl
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       for j in "${!IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[@]}"
       do
         TEST_SERVER_IPERF_DST=${IPERF_CLUSTERIP_POD_SVC_IPV4_LIST[$j]}
         TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_POD_SVC_PORT
         TEST_SERVER_CLUSTER=${IPERF_CLUSTERIP_POD_SVC_CLUSTER_LIST[$j]}
-        process-iperf
+        if [ "$IPERF" == true ]; then
+          process-iperf
+        fi
+        if [ "$HWOL" == true ]; then
+          process-hw-offload-validation
+        fi
       done
     fi
 
@@ -1030,13 +1090,18 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 10 ]; then
     process-curl
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     for j in "${!IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[@]}"
     do
       TEST_SERVER_IPERF_DST=${IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[$j]}
       TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
       TEST_SERVER_CLUSTER=${IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST[$j]}
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     done
   fi
 
@@ -1093,13 +1158,18 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 10 ]; then
       process-curl
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       for j in "${!IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[@]}"
       do
         TEST_SERVER_IPERF_DST=${IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST[$j]}
         TEST_SERVER_IPERF_DST_PORT=$IPERF_CLUSTERIP_HOST_SVC_PORT
         TEST_SERVER_CLUSTER=${IPERF_CLUSTERIP_HOST_SVC_CLUSTER_LIST[$j]}
-        process-iperf
+        if [ "$IPERF" == true ]; then
+          process-iperf
+        fi
+        if [ "$HWOL" == true ]; then
+          process-hw-offload-validation
+        fi
       done
     fi
 
@@ -1158,11 +1228,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ] && [ "$FT_HOSTONLY" == false 
     #fi
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
     TEST_SERVER_CLUSTER=$MY_CLUSTER
-    process-iperf
+    if [ "$IPERF" == true ]; then
+      process-iperf
+    fi
+    if [ "$HWOL" == true ]; then
+      process-hw-offload-validation
+    fi
   fi
 
   if [ "$OVN_TRACE" == true ]; then
@@ -1219,11 +1294,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ] && [ "$FT_HOSTONLY" == false 
       #fi
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
       TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_POD_SVC_PORT
       TEST_SERVER_CLUSTER=$MY_CLUSTER
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     fi
 
     if [ "$OVN_TRACE" == true ]; then
@@ -1283,11 +1363,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ] && [ "$FT_CLIENTONLY" == fals
     #fi
   fi
 
-  if [ "$IPERF" == true ]; then
+  if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
     TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
     TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
     TEST_SERVER_CLUSTER=$MY_CLUSTER
-    process-iperf
+    if [ "$IPERF" == true ]; then
+      process-iperf
+    fi
+    if [ "$HWOL" == true ]; then
+      process-hw-offload-validation
+    fi
   fi
 
   if [ "$OVN_TRACE" == true ]; then
@@ -1349,11 +1434,16 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ] && [ "$FT_CLIENTONLY" == fals
       #fi
     fi
 
-    if [ "$IPERF" == true ]; then
+    if [ "$IPERF" == true ] || [ "$HWOL" == true ]; then
       TEST_SERVER_IPERF_DST=$IPERF_SERVER_HOST_IP
       TEST_SERVER_IPERF_DST_PORT=$IPERF_NODEPORT_HOST_SVC_PORT
       TEST_SERVER_CLUSTER=$MY_CLUSTER
-      process-iperf
+      if [ "$IPERF" == true ]; then
+        process-iperf
+      fi
+      if [ "$HWOL" == true ]; then
+        process-hw-offload-validation
+      fi
     fi
 
     if [ "$OVN_TRACE" == true ]; then
@@ -1383,7 +1473,7 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 13 ]; then
     echo
     echo "*** 13-a: Pod -> External Network ***"
     echo
-  
+
     TEST_SERVER_CLUSTER=$EXTERNAL
     TEST_SERVER_NODE=$EXTERNAL
     TEST_FILENAME="13-a-pod2external.txt"

@@ -22,6 +22,7 @@ This repository contains the yaml files and test scripts to test all the traffic
 - [Test Script Usage](#test-script-usage)
   - [curl](#curl)
   - [iperf3](#iperf3)
+  - [Hardware Offload Validation](#hardware-offload-validation)
   - [ovnkube-trace](#ovnkube-trace)
 - [Container Images](#container-images)
 - [Multi-Cluster](#multi-cluster)
@@ -307,6 +308,9 @@ This script uses ENV Variables to control test. Here are few key ones:
                                  VERBOSE=true ./test.sh
   IPERF                      - 'iperf3' can be run on each flow, off by default. Example:
                                  IPERF=true ./test.sh
+  HWOL                       - Hardware Offload Validation can be run on each applicable flow."
+                               Parameters from IPERF will be used to generate traffic. Example:"
+                                 HWOL=true ./test.sh"
   OVN_TRACE                  - 'ovn-trace' can be run on each flow, off by deafult. Example:
                                  OVN_TRACE=true ./test.sh
   FT_VARS                    - Print script variables. Off by default. Example:
@@ -362,7 +366,7 @@ Default/Override Values:
     FT_SERVER_NODE_LABEL               ft.ServerPod
     FT_CLIENT_NODE_LABEL               ft.ClientPod
 ```
-  
+
 ### Cleanup Test Pods
 
 To teardown the test setup:
@@ -435,6 +439,8 @@ Default/Override Values:
     IPERF                              true
     IPERF_CMD                          iperf3
     IPERF_TIME                         2
+    IPERF_FORWARD_TEST_OPT
+    IPERF_REVERSE_TEST_OPT             -R
     OVN_TRACE                          false
     OVN_TRACE_CMD                      ./ovnkube-trace -loglevel=5 -tcp
     FT_REQ_REMOTE_CLIENT_NODE          first
@@ -541,6 +547,11 @@ and default is 10 seconds):
 TEST_CASE=3 IPERF=true IPERF_TIME=2 ./test.sh
 ```
 
+* Hardware Offload Validation is disabled by default. To enable:
+```
+TEST_CASE=3 HWOL=true ./test.sh
+```
+
 * `ovnkube-trace` is disabled by default. To enable:
 ```
 TEST_CASE=3 OVN_TRACE=true ./test.sh
@@ -593,37 +604,65 @@ SUCCESS
 
 `iperf3` is used to test packet throughput. It can be used to determine
 the rough throughput of each flow. When enabled, `iperf3` is run and a
-summary of the results is printed.
+summary of the results is printed. Both forward and reverse directions
+of traffic is tested. Traffic is first sent from client, then traffic
+is sent from server (reverse option in `iperf3`).
 
 ```
 $ TEST_CASE=1 IPERF=true IPERF_TIME=2 ./test.sh
 
-FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
-----------------------------------------------------------
+FLOW 01: Pod to Pod traffic
+---------------------------
 
 *** 1-a: Pod to Pod (Same Node) ***
 
-kubectl exec -it ft-client-pod-2twqq -- curl -m 5 "http://10.244.2.26:8080/"
+admin:worker-advnetlab48 -> admin:worker-advnetlab48
+kubectl exec -n default ft-client-pod-sriov-7c7kw -- curl -m 5 "http://10.131.0.7:8080/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100   164  100   164    0     0    501      0 --:--:-- --:--:-- --:--:--   501
+100   164  100   164    0     0    501      0 --:--:-- --:--:-- --:--:--   501
 SUCCESS
 
-kubectl exec -it ft-client-pod-2twqq -- iperf3 -c 10.244.2.27 -p 5201 -t 2
-Summary (see iperf-logs/1a-pod2pod-same-node.txt for full detail):
+admin:worker-advnetlab48 -> admin:worker-advnetlab48
+kubectl exec -n default ft-client-pod-sriov-7c7kw --  iperf3 -c 10.131.0.8 -p 5201 -t 30
+admin:worker-advnetlab48 -(Reverse)-> admin:worker-advnetlab48
+kubectl exec -n default ft-client-pod-sriov-7c7kw --  iperf3 -R -c 10.131.0.8 -p 5201 -t 30
+Summary (see iperf-logs/01-a-pod2pod-sameNode.txt for full detail):
 [ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-2.00   sec  3.43 GBytes  14.7 Gbits/sec  334             sender
-[  5]   0.00-2.04   sec  3.43 GBytes  14.4 Gbits/sec                  receiver
+[  5]   0.00-30.00  sec  96.8 GBytes  27.7 Gbits/sec  14601             sender
+[  5]   0.00-30.00  sec  96.8 GBytes  27.7 Gbits/sec                  receiver
+--
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-30.00  sec  95.0 GBytes  27.2 Gbits/sec  16500             sender
+[  5]   0.00-30.00  sec  95.0 GBytes  27.2 Gbits/sec                  receiver
 SUCCESS
 
 
 *** 1-b: Pod to Pod (Different Node) ***
 
-kubectl exec -it ft-client-pod-gc6dw -- curl -m 5 "http://10.244.2.26:8080/"
+admin:worker-advnetlab49 -> admin:worker-advnetlab48
+kubectl exec -n default ft-client-pod-sriov-5g7s5 -- curl -m 5 "http://10.131.0.7:8080/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100   164  100   164    0     0    383      0 --:--:-- --:--:-- --:--:--   384
 SUCCESS
 
-kubectl exec -it ft-client-pod-gc6dw -- iperf3 -c 10.244.2.27 -p 5201 -t 2
-Summary (see iperf-logs/1b-pod2pod-diff-node.txt for full detail):
+admin:worker-advnetlab49 -> admin:worker-advnetlab48
+kubectl exec -n default ft-client-pod-sriov-5g7s5 --  iperf3 -c 10.131.0.8 -p 5201 -t 30
+admin:worker-advnetlab49 -(Reverse)-> admin:worker-advnetlab48
+kubectl exec -n default ft-client-pod-sriov-5g7s5 --  iperf3 -R -c 10.131.0.8 -p 5201 -t 30
+Summary (see iperf-logs/01-b-pod2pod-diffNode.txt for full detail):
 [ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-2.00   sec   633 MBytes  2.65 Gbits/sec    0             sender
-[  5]   0.00-2.04   sec   632 MBytes  2.60 Gbits/sec                  receiver
+[  5]   0.00-30.00  sec  64.6 GBytes  18.5 Gbits/sec  3767             sender
+[  5]   0.00-30.00  sec  64.6 GBytes  18.5 Gbits/sec                  receiver
+--
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-30.00  sec  71.8 GBytes  20.6 Gbits/sec  3763             sender
+[  5]   0.00-30.00  sec  71.8 GBytes  20.5 Gbits/sec                  receiver
 SUCCESS
 ```
 
@@ -632,41 +671,35 @@ files in the `iperf-logs/` directory. Use `VERBOSE=true` to when command is exec
 to see full output command is run. Below is a list of sample output files:
 
 ```
-$ ls -al iperf-logs
-total 132
-drwxrwxr-x. 2 user user 4096 Jun 10 16:46 .
-drwxrwxr-x. 7 user user 4096 Jun 11 15:04 ..
--rw-rw-r--. 1 user user  624 Jun 10 16:51 01-a-pod2pod-sameNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 01-b-pod2pod-diffNode.txt
--rw-rw-r--. 1 user user  622 Jun 10 16:51 02-a-pod2host-sameNode.txt
--rw-rw-r--. 1 user user  622 Jun 10 16:51 02-b-pod2host-diffNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 03-a-pod2clusterIpSvc-podBackend-sameNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 03-b-pod2clusterIpSvc-podBackend-diffNode.txt
--rw-rw-r--. 1 user user  628 Jun 10 16:51 04-a-pod2clusterIpSvc-hostBackend-sameNode.txt
--rw-rw-r--. 1 user user  628 Jun 10 16:51 04-b-pod2clusterIpSvc-hostBackend-diffNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 05-a-pod2nodePortSvc-podBackend-sameNode.txt
--rw-rw-r--. 1 user user   48 Jun 10 16:51 05-b-pod2nodePortSvc-podBackend-diffNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 06-a-pod2nodePortSvc-hostBackend-sameNode.txt
--rw-rw-r--. 1 user user   48 Jun 10 16:51 06-b-pod2nodePortSvc-hostBackend-diffNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:51 07-a-host2pod-sameNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:51 07-b-host2pod-diffNode.txt
--rw-rw-r--. 1 user user  621 Jun 10 16:52 08-a-host2host-sameNode.txt
--rw-rw-r--. 1 user user  621 Jun 10 16:52 08-b-host2host-diffNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:52 09-a-host2clusterIpSvc-podBackend-sameNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:52 09-b-host2clusterIpSvc-podBackend-diffNode.txt
--rw-rw-r--. 1 user user  627 Jun 10 16:52 10-a-host2clusterIpSvc-hostBackend-sameNode.txt
--rw-rw-r--. 1 user user  627 Jun 10 16:52 10-b-host2clusterIpSvc-hostBackend-diffNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:52 11-a-host2nodePortSvc-podBackend-sameNode.txt
--rw-rw-r--. 1 user user   48 Jun 10 16:52 11-b-host2nodePortSvc-podBackend-diffNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:52 12-a-host2nodePortSvc-hostBackend-sameNode.txt
--rw-rw-r--. 1 user user   48 Jun 10 16:52 12-b-host2nodePortSvc-hostBackend-diffNode.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 13-a-pod2external.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 13-b-host2external.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 14-a-external2clusterIpSvc-podBackend.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 14-b-external2clusterIpSvc-hostBackend.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 15-a-external2nodePortSvc-podBackend.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:53 15-b-external2nodePortSvc-hostBackend.txt
--rw-rw-r--. 1 user user   71 Jun  9 13:51 .gitignore
+$ ls -al iperf-logs/
+total 200
+drwxr-xr-x. 2 root root 4096 Jun  9 11:59 .
+drwxr-xr-x. 9 root root 4096 Jun  9 10:27 ..
+-rw-r--r--. 1 root root 5438 Jun  9 10:28 01-a-pod2pod-sameNode.txt
+-rw-r--r--. 1 root root 5435 Jun  9 10:33 01-b-pod2pod-diffNode.txt
+-rw-r--r--. 1 root root 5458 Jun  9 10:38 02-a-pod2host-sameNode.txt
+-rw-r--r--. 1 root root 5455 Jun  9 10:39 02-b-pod2host-diffNode.txt
+-rw-r--r--. 1 root root 5454 Jun  9 10:40 03-a-pod2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 5450 Jun  9 10:45 03-b-pod2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 5448 Jun  9 10:51 04-a-pod2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 5445 Jun  9 10:56 04-b-pod2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 5463 Jun  9 11:01 05-a-pod2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 5459 Jun  9 11:06 05-b-pod2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 5461 Jun  9 11:11 06-a-pod2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 5459 Jun  9 11:16 06-b-pod2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 5458 Jun  9 11:21 07-a-host2pod-sameNode.txt
+-rw-r--r--. 1 root root 5434 Jun  9 11:22 07-b-host2pod-diffNode.txt
+-rw-r--r--. 1 root root 5461 Jun  9 11:23 08-a-host2host-sameNode.txt
+-rw-r--r--. 1 root root 5464 Jun  9 11:24 08-b-host2host-diffNode.txt
+-rw-r--r--. 1 root root 5457 Jun  9 11:25 09-a-host2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 5457 Jun  9 11:30 09-b-host2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 5456 Jun  9 11:36 10-a-host2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 5452 Jun  9 11:41 10-b-host2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 5466 Jun  9 11:46 11-a-host2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 5468 Jun  9 11:51 11-b-host2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 5407 Jun  9 11:56 12-a-host2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 2753 Jun  9 12:00 12-b-host2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root   70 Jun  9 10:27 .gitignore
 ```
 
 *NOTE:* The *'cleanup.sh'* script does not remove these files and each subsequent run of
@@ -679,6 +712,327 @@ in and set by the script. Example:
 
 ```
 FT_CLIENT_CPU_MASK=0x100 TEST_CASE=1 IPERF=true CURL=false ./test.sh
+```
+
+### Hardware Offload Validation
+
+Hardware Offload Validation is used to determine whether a flow has been hardware
+offloaded by examining the RX/TX packet counters from `ethtool` on the
+VF representors. When enabled, `iperf3` is run in both forward and reverse traffic
+directions, `ethtool` on the VF representor is run at the beginning and end of the
+`iperf3` duration, `tcpdump` on the VF representor is run during the `iperf3` duration,
+lastly a summary of the results is printed.
+
+```
+$ TEST_CASE=1 HWOL=true ./test.sh
+
+FLOW 01: Pod to Pod traffic
+---------------------------
+
+*** 1-a: Pod to Pod (Same Node) ***
+
+admin:worker-advnetlab48 -> admin:worker-advnetlab48
+kubectl exec -n default ft-client-pod-sriov-7c7kw -- curl -m 5 "http://10.131.0.7:8080/etc/httpserver/"
+SUCCESS
+
+admin:worker-advnetlab48 -> admin:worker-advnetlab48
+Client Pod on Client Host VF Representor Results:
+kubectl exec -n default ft-client-pod-sriov-7c7kw --  iperf3  -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S 5e4c68e6cdf0428 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 5e4c68e6cdf0428 -n not arp"
+Summary (see hwol-logs/01-a-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 5e4c68e6cdf0428:
+RX Packets: 2110133 - 2110133 = 0
+TX Packets: 1529762921 - 1529762921 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 5e4c68e6cdf0428, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   147 GBytes  31.6 Gbits/sec  28331             sender
+[  5]   0.00-40.00  sec   147 GBytes  31.6 Gbits/sec                  receiver
+
+Client Pod on Server Host VF Representor Results:
+kubectl exec -n default ft-client-pod-sriov-7c7kw --  iperf3  -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S 5e4c68e6cdf0428 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 5e4c68e6cdf0428 -n not arp"
+Summary (see hwol-logs/01-a-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 5e4c68e6cdf0428:
+RX Packets: 2111344 - 2111344 = 0
+TX Packets: 1529763129 - 1529763129 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 5e4c68e6cdf0428, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   128 GBytes  27.4 Gbits/sec  18819             sender
+[  5]   0.00-40.00  sec   128 GBytes  27.4 Gbits/sec                  receiver
+
+Server Pod on Server Host VF Representor Results:
+kubectl exec -n default ft-client-pod-sriov-7c7kw --  iperf3  -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S e934c8ad11a9898 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i e934c8ad11a9898 -n not arp"
+Summary (see hwol-logs/01-a-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 5e4c68e6cdf0428:
+RX Packets: 49229067 - 49229067 = 0
+TX Packets: 256117386 - 256117386 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on e934c8ad11a9898, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   129 GBytes  27.8 Gbits/sec  17577             sender
+[  5]   0.00-40.00  sec   129 GBytes  27.8 Gbits/sec                  receiver
+SUCCESS
+
+admin:worker-advnetlab48 -(Reverse)-> admin:worker-advnetlab48
+Client Pod on Client Host VF Representor Results (Reverse):
+kubectl exec -n default ft-client-pod-sriov-7c7kw --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S 5e4c68e6cdf0428 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 5e4c68e6cdf0428 -n not arp"
+Summary (see hwol-logs/01-a-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 5e4c68e6cdf0428:
+RX Packets: 2111714 - 2111714 = 0
+TX Packets: 1529765249 - 1529765249 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 5e4c68e6cdf0428, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   144 GBytes  30.9 Gbits/sec  30382             sender
+[  5]   0.00-40.00  sec   144 GBytes  30.9 Gbits/sec                  receiver
+
+Client Pod on Server Host VF Representor Results (Reverse):
+kubectl exec -n default ft-client-pod-sriov-7c7kw --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S 5e4c68e6cdf0428 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 5e4c68e6cdf0428 -n not arp"
+Summary (see hwol-logs/01-a-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 5e4c68e6cdf0428:
+RX Packets: 2111810 - 2111810 = 0
+TX Packets: 1529767130 - 1529767130 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 5e4c68e6cdf0428, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   131 GBytes  28.2 Gbits/sec  25898             sender
+[  5]   0.00-40.00  sec   131 GBytes  28.2 Gbits/sec                  receiver
+
+Server Pod on Server Host VF Representor Results (Reverse):
+kubectl exec -n default ft-client-pod-sriov-7c7kw --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S e934c8ad11a9898 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i e934c8ad11a9898 -n not arp"
+Summary (see hwol-logs/01-a-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 5e4c68e6cdf0428:
+RX Packets: 49241013 - 49241013 = 0
+TX Packets: 256117663 - 256117663 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on e934c8ad11a9898, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   124 GBytes  26.7 Gbits/sec  16422             sender
+[  5]   0.00-40.00  sec   124 GBytes  26.7 Gbits/sec                  receiver
+SUCCESS
+
+
+*** 1-b: Pod to Pod (Different Node) ***
+
+admin:worker-advnetlab49 -> admin:worker-advnetlab48
+kubectl exec -n default ft-client-pod-sriov-5g7s5 -- curl -m 5 "http://10.131.0.7:8080/etc/httpserver/"
+SUCCESS
+
+admin:worker-advnetlab49 -> admin:worker-advnetlab48
+Client Pod on Client Host VF Representor Results:
+kubectl exec -n default ft-client-pod-sriov-5g7s5 --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-tcdcf" -- /bin/sh -c "ethtool -S 71f6388f057f493 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-tcdcf" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 71f6388f057f493 -n not arp"
+Summary (see hwol-logs/01-b-pod2pod-diffNode.txt for full detail):
+Summary Ethtool results for 71f6388f057f493:
+RX Packets: 29709701 - 29709701 = 0
+TX Packets: 16373115 - 16373115 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 71f6388f057f493, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec  80.1 GBytes  17.2 Gbits/sec  1886             sender
+[  5]   0.00-40.00  sec  80.1 GBytes  17.2 Gbits/sec                  receiver
+
+Client Pod on Server Host VF Representor Results:
+kubectl exec -n default ft-client-pod-sriov-5g7s5 --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S 5e4c68e6cdf0428 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 5e4c68e6cdf0428 -n not arp"
+Summary (see hwol-logs/01-b-pod2pod-diffNode.txt for full detail):
+Summary Ethtool results for 71f6388f057f493:
+RX Packets: 2111927 - 2111927 = 0
+TX Packets: 1529775109 - 1529775109 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 5e4c68e6cdf0428, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec  85.1 GBytes  18.3 Gbits/sec  2989             sender
+[  5]   0.00-40.00  sec  85.1 GBytes  18.3 Gbits/sec                  receiver
+
+Server Pod on Server Host VF Representor Results:
+kubectl exec -n default ft-client-pod-sriov-5g7s5 --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S e934c8ad11a9898 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i e934c8ad11a9898 -n not arp"
+Summary (see hwol-logs/01-b-pod2pod-diffNode.txt for full detail):
+Summary Ethtool results for 71f6388f057f493:
+RX Packets: 49246837 - 49246837 = 0
+TX Packets: 256117890 - 256117890 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on e934c8ad11a9898, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec  99.3 GBytes  21.3 Gbits/sec  6364             sender
+[  5]   0.00-40.00  sec  99.3 GBytes  21.3 Gbits/sec                  receiver
+SUCCESS
+
+admin:worker-advnetlab49 -(Reverse)-> admin:worker-advnetlab48
+Client Pod on Client Host VF Representor Results (Reverse):
+kubectl exec -n default ft-client-pod-sriov-5g7s5 --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-tcdcf" -- /bin/sh -c "ethtool -S 71f6388f057f493 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-tcdcf" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 71f6388f057f493 -n not arp"
+Summary (see hwol-logs/01-b-pod2pod-diffNode.txt for full detail):
+Summary Ethtool results for 71f6388f057f493:
+RX Packets: 29709735 - 29709735 = 0
+TX Packets: 16373234 - 16373234 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 71f6388f057f493, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec  88.4 GBytes  19.0 Gbits/sec  5081             sender
+[  5]   0.00-40.00  sec  88.4 GBytes  19.0 Gbits/sec                  receiver
+
+Client Pod on Server Host VF Representor Results (Reverse):
+kubectl exec -n default ft-client-pod-sriov-5g7s5 --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S 5e4c68e6cdf0428 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 5e4c68e6cdf0428 -n not arp"
+Summary (see hwol-logs/01-b-pod2pod-diffNode.txt for full detail):
+Summary Ethtool results for 71f6388f057f493:
+RX Packets: 2111927 - 2111927 = 0
+TX Packets: 1529775109 - 1529775109 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 5e4c68e6cdf0428, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   100 GBytes  21.6 Gbits/sec  7092             sender
+[  5]   0.00-40.00  sec   100 GBytes  21.6 Gbits/sec                  receiver
+
+Server Pod on Server Host VF Representor Results (Reverse):
+kubectl exec -n default ft-client-pod-sriov-5g7s5 --  iperf3 -R -c 10.131.0.8 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "ethtool -S e934c8ad11a9898 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-brxwg" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i e934c8ad11a9898 -n not arp"
+Summary (see hwol-logs/01-b-pod2pod-diffNode.txt for full detail):
+Summary Ethtool results for 71f6388f057f493:
+RX Packets: 49251327 - 49251327 = 0
+TX Packets: 256118048 - 256118048 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on e934c8ad11a9898, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   101 GBytes  21.6 Gbits/sec  5579             sender
+[  5]   0.00-40.00  sec   101 GBytes  21.6 Gbits/sec                  receiver
+SUCCESS
+```
+
+When Hardware Offload Validation is run on each sub-flow, the full output of the command
+is piped to files in the `hwol-logs/` directory. Use `FT_DEBUG=true` to see all commands
+that were used to determine the VF representor and other parameters. Use `VERBOSE=true` to
+when command is executed to see full output command is run. Below is a list of sample output
+files:
+
+```
+$ ls -al hwol-logs/
+total 5906976
+drwxr-xr-x. 2 root root       4096 Jun  9 12:24 .
+drwxr-xr-x. 9 root root       4096 Jun  9 10:27 ..
+-rw-r--r--. 1 root root      24807 Jun  9 12:20 01-a-pod2pod-sameNode.txt
+-rw-r--r--. 1 root root      23907 Jun  9 12:24 01-b-pod2pod-diffNode.txt
+-rw-r--r--. 1 root root      24090 Jun  9 10:44 03-a-pod2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root      23864 Jun  9 10:50 03-b-pod2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2083508963 Jun  9 10:55 04-a-pod2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root  258572217 Jun  9 11:00 04-b-pod2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root      23929 Jun  9 11:05 05-a-pod2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root  263024539 Jun  9 11:10 05-b-pod2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 1954959733 Jun  9 11:15 06-a-pod2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root  250297501 Jun  9 11:20 06-b-pod2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root  558443546 Jun  9 11:29 09-a-host2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root      24199 Jun  9 11:35 09-b-host2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root      23974 Jun  9 11:40 10-a-host2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root      23955 Jun  9 11:45 10-b-host2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root  524801984 Jun  9 11:50 11-a-host2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root  154867716 Jun  9 11:55 11-b-host2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root      15664 Jun  9 11:59 12-a-host2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root      24008 Jun  9 12:04 12-b-host2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root         70 Jun  9 10:27 .gitignore
+```
+
+*NOTE:* The *'cleanup.sh'* script does not remove these files and each subsequent run of
+*'test.sh'* overwrites the previous test run. They can be removed manually or using
+`CLEAN_ALL=true ./cleanup.sh`.
+
+An additional variable is supported when running Hardware Offload Validation that allows
+the `iperf3` executable to be pinned to a CPU. The CPU Mask is calculated outside of Flow-Test
+and simply passed in and set by the script. Example:
+
+```
+FT_CLIENT_CPU_MASK=0x100 TEST_CASE=1 HWOL=true CURL=false ./test.sh
 ```
 
 ### ovnkube-trace
@@ -745,7 +1099,7 @@ Test scripts have been setup to run in a Multi-Cluster environment. It has only 
 with [Submariner](https://github.com/submariner-io) and the clusters themselves need to already
 be running. For Multi-Cluster, Flow-Tester is deployed in one of two modes:
 * `Full Mode:` Normal deployment of Flow-Tester pods and services and all the Flow-Tester
-  Services are exported.  
+  Services are exported.
 * `Client-Only Mode:` Only Client Pods are created, no Server Pods or Services.
 
 For Multi-Cluster, the following scripts have been added:
@@ -877,7 +1231,7 @@ combination of paths are tested:
 * PATH 07: B-C -- C-B
 * PATH 08: B-C -- C-A
 
-Once all the Paths have been tested, all the routes are restored and the script finds the next set of 
+Once all the Paths have been tested, all the routes are restored and the script finds the next set of
 clusters to test.
 
 To test all combinations (which is the default), use:

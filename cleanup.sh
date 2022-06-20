@@ -82,5 +82,6 @@ fi
 if [ "$CLEAN_ALL" == true ]; then
   rm -rf manifests/yamls/*.yaml
   rm -rf iperf-logs/*.txt
+  rm -rf hwol-logs/*.txt
   rm -rf ovn-traces/*.txt
 fi
