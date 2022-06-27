@@ -25,6 +25,7 @@ process-curl() {
   #     TEST_SERVER_NODE
   # If not used, VARIABLE should be blank for 'if [ -z "${VARIABLE}" ]' test.
 
+  echo "=== CURL ==="
   echo "${MY_CLUSTER}:${TEST_CLIENT_NODE} -> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE}"
 
   if [ -z "${TEST_CLIENT_POD}" ]; then
@@ -60,13 +61,14 @@ process-curl() {
   fi
 
   # Print SUCCESS or FAILURE
-  echo "${TMP_OUTPUT}" | grep -cq "${TEST_SERVER_RSP}" && echo -e "${GREEN}SUCCESS${NC}\r\n" || echo -e "${RED}FAILED${NC}\r\n"
+  echo "${TMP_OUTPUT}" | grep -cq "${TEST_SERVER_RSP}" && echo -e "\r\n${GREEN}SUCCESS${NC}\r\n" || echo -e "\r\n${RED}FAILED${NC}\r\n"
 }
 
 process-iperf() {
   # The following VARIABLES are used by this function:
   #     TEST_CLIENT_POD
-  #     TEST_FILENAME
+  #     FORWARD_TEST_FILENAME
+  #     REVERSE_TEST_FILENAME
   #     TEST_SERVER_IPERF_DST
   #     TEST_SERVER_IPERF_DST_PORT
   TASKSET_CMD=""
@@ -74,33 +76,47 @@ process-iperf() {
     TASKSET_CMD="taskset ${FT_CLIENT_CPU_MASK} "
   fi
 
-  IPERF_FILENAME="${IPERF_LOGS_DIR}/${TEST_FILENAME}"
+  IPERF_FILENAME_FORWARD_TEST="${IPERF_LOGS_DIR}/${FORWARD_TEST_FILENAME}"
+  IPERF_FILENAME_REVERSE_TEST="${IPERF_LOGS_DIR}/${REVERSE_TEST_FILENAME}"
 
-  echo "${MY_CLUSTER}:${TEST_CLIENT_NODE} -> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE}"
+  echo "=== IPERF ==="
+  echo "== ${MY_CLUSTER}:${TEST_CLIENT_NODE} -> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE} =="
   echo "kubectl exec -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- ${TASKSET_CMD} ${IPERF_CMD} ${IPERF_FORWARD_TEST_OPT} -c ${TEST_SERVER_IPERF_DST} -p ${TEST_SERVER_IPERF_DST_PORT} -t ${IPERF_TIME}"
-  kubectl exec -n "${FT_NAMESPACE}" "$TEST_CLIENT_POD" -- /bin/sh -c "${TASKSET_CMD} ${IPERF_CMD} ${IPERF_FORWARD_TEST_OPT} -c ${TEST_SERVER_IPERF_DST} -p ${TEST_SERVER_IPERF_DST_PORT} -t ${IPERF_TIME}"  > "${IPERF_FILENAME}"
-
-  echo "${MY_CLUSTER}:${TEST_CLIENT_NODE} -(Reverse)-> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE}"
-  echo "kubectl exec -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- ${TASKSET_CMD} ${IPERF_CMD} ${IPERF_REVERSE_TEST_OPT} -c ${TEST_SERVER_IPERF_DST} -p ${TEST_SERVER_IPERF_DST_PORT} -t ${IPERF_TIME}"
-  kubectl exec -n "${FT_NAMESPACE}" "$TEST_CLIENT_POD" -- /bin/sh -c "${TASKSET_CMD} ${IPERF_CMD} ${IPERF_REVERSE_TEST_OPT} -c ${TEST_SERVER_IPERF_DST} -p ${TEST_SERVER_IPERF_DST_PORT} -t ${IPERF_TIME}"  >> "${IPERF_FILENAME}"
+  kubectl exec -n "${FT_NAMESPACE}" "$TEST_CLIENT_POD" -- /bin/sh -c "${TASKSET_CMD} ${IPERF_CMD} ${IPERF_FORWARD_TEST_OPT} -c ${TEST_SERVER_IPERF_DST} -p ${TEST_SERVER_IPERF_DST_PORT} -t ${IPERF_TIME}"  > "${IPERF_FILENAME_FORWARD_TEST}"
 
   # Dump command output
   if [ "$VERBOSE" == true ]; then
-    echo "Full Output (from ${IPERF_FILENAME}):"
-    cat ${IPERF_FILENAME}
+    echo "Full Output (from ${IPERF_FILENAME_FORWARD_TEST}):"
+    cat ${IPERF_FILENAME_FORWARD_TEST}
   else
-    echo "Summary (see ${IPERF_FILENAME} for full detail):"
-    cat ${IPERF_FILENAME} | grep -B 1 -A 1 "sender"
+    echo "Summary (see ${IPERF_FILENAME_FORWARD_TEST} for full detail):"
+    cat ${IPERF_FILENAME_FORWARD_TEST} | grep -B 1 -A 1 "sender"
   fi
 
   # Print SUCCESS or FAILURE
-  cat ${IPERF_FILENAME} | grep -cq "sender" && echo -e "${GREEN}SUCCESS${NC}\r\n" || echo -e "${RED}FAILED${NC}\r\n"
+  cat ${IPERF_FILENAME_FORWARD_TEST} | grep -cq "sender" && echo -e "\r\n${GREEN}SUCCESS${NC}\r\n" || echo -e "\r\n${RED}FAILED${NC}\r\n"
+
+  echo "== ${MY_CLUSTER}:${TEST_CLIENT_NODE} -> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE} (Reverse) =="
+  echo "kubectl exec -n ${FT_NAMESPACE} ${TEST_CLIENT_POD} -- ${TASKSET_CMD} ${IPERF_CMD} ${IPERF_REVERSE_TEST_OPT} -c ${TEST_SERVER_IPERF_DST} -p ${TEST_SERVER_IPERF_DST_PORT} -t ${IPERF_TIME}"
+  kubectl exec -n "${FT_NAMESPACE}" "$TEST_CLIENT_POD" -- /bin/sh -c "${TASKSET_CMD} ${IPERF_CMD} ${IPERF_REVERSE_TEST_OPT} -c ${TEST_SERVER_IPERF_DST} -p ${TEST_SERVER_IPERF_DST_PORT} -t ${IPERF_TIME}"  > "${IPERF_FILENAME_REVERSE_TEST}"
+
+  # Dump command output
+  if [ "$VERBOSE" == true ]; then
+    echo "Full Output (from ${IPERF_FILENAME_REVERSE_TEST}):"
+    cat ${IPERF_FILENAME_REVERSE_TEST}
+  else
+    echo "Summary (see ${IPERF_FILENAME_REVERSE_TEST} for full detail):"
+    cat ${IPERF_FILENAME_REVERSE_TEST} | grep -B 1 -A 1 "sender"
+  fi
+
+  # Print SUCCESS or FAILURE
+  cat ${IPERF_FILENAME_REVERSE_TEST} | grep -cq "sender" && echo -e "\r\n${GREEN}SUCCESS${NC}\r\n" || echo -e "\r\n${RED}FAILED${NC}\r\n"
 }
 
 process-vf-rep-stats() {
   # The following VARIABLES are used by this function:
   #     TEST_CLIENT_POD
-  #     TEST_FILENAME
+  #     HWOL_VALIDATION_FILENAME
   #     TEST_SERVER_IPERF_DST
   #     TEST_SERVER_IPERF_DST_PORT
   #     IPERF_OPT
@@ -200,11 +216,12 @@ process-hw-offload-validation() {
   #     TEST_CLIENT_NODE
   #     TEST_SERVER_NODE
   #     TEST_CLIENT_POD
-  #     TEST_FILENAME
+  #     FORWARD_TEST_FILENAME
+  #     REVERSE_TEST_FILENAME
   #     TEST_SERVER_IPERF_DST
   #     TEST_SERVER_IPERF_DST_PORT
-
-  HWOL_VALIDATION_FILENAME="${HW_OFFLOAD_LOGS_DIR}/${TEST_FILENAME}"
+  #     IPERF_FORWARD_TEST_OPT
+  #     IPERF_REVERSE_TEST_OPT
 
   [ "$FT_DEBUG" == true ] && echo "kubectl get pods -n ${FT_NAMESPACE} --selector=name=${TOOLS_POD_NAME} -o wide"
   TMP_OUTPUT=$(kubectl get pods -n ${FT_NAMESPACE} --selector=name=${TOOLS_POD_NAME} -o wide)
@@ -237,65 +254,64 @@ process-hw-offload-validation() {
   fi
 
   IPERF_OPT=$IPERF_FORWARD_TEST_OPT
-  echo "${MY_CLUSTER}:${TEST_CLIENT_NODE} -> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE}"
-  echo "Client Pod on Client Host VF Representor Results:" > "${HWOL_VALIDATION_FILENAME}"
-  echo "Client Pod on Client Host VF Representor Results:"
+  HWOL_VALIDATION_FILENAME="${HW_OFFLOAD_LOGS_DIR}/${FORWARD_TEST_FILENAME}"
+  echo "=== HWOL ==="
+  echo "== ${MY_CLUSTER}:${TEST_CLIENT_NODE} -> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE} =="
+  echo -e "= Client Pod on Client Host VF Representor Results =" > "${HWOL_VALIDATION_FILENAME}"
+  echo -e "= Client Pod on Client Host VF Representor Results ="
   TEST_TOOLS_POD=$TOOLS_CLIENT_POD
   TEST_VF_REP=$TEST_CLIENT_CLIENT_VF_REP
   process-vf-rep-stats
   vfRes1=$?
 
-  echo "Client Pod on Server Host VF Representor Results:" >> "${HWOL_VALIDATION_FILENAME}"
-  echo
-  echo "Client Pod on Server Host VF Representor Results:"
+  echo -e "\r\n= Client Pod on Server Host VF Representor Results =" >> "${HWOL_VALIDATION_FILENAME}"
+  echo -e "\r\n= Client Pod on Server Host VF Representor Results ="
   TEST_TOOLS_POD=$TOOLS_SERVER_POD
   TEST_VF_REP=$TEST_SERVER_CLIENT_VF_REP
   process-vf-rep-stats
   vfRes2=$?
 
-  echo "Server Pod on Server Host VF Representor Results:" >> "${HWOL_VALIDATION_FILENAME}"
-  echo
-  echo "Server Pod on Server Host VF Representor Results:"
+  echo -e "\r\n= Server Pod on Server Host VF Representor Results =" >> "${HWOL_VALIDATION_FILENAME}"
+  echo -e "\r\n= Server Pod on Server Host VF Representor Results ="
   TEST_TOOLS_POD=$TOOLS_SERVER_POD
   TEST_VF_REP=$TEST_SERVER_IPERF_SERVER_VF_REP
   process-vf-rep-stats
   vfRes3=$?
 
   if [ $vfRes1 -ne 0 ] || [ $vfRes2 -ne 0 ] || [ $vfRes3 -ne 0 ]; then
-    echo -e "${RED}FAILED${NC}\r\n"
+    echo -e "\r\n${RED}FAILED${NC}\r\n"
   else
-    echo -e "${GREEN}SUCCESS${NC}\r\n"
+    echo -e "\r\n${GREEN}SUCCESS${NC}\r\n"
   fi
 
   IPERF_OPT=$IPERF_REVERSE_TEST_OPT
-  echo "${MY_CLUSTER}:${TEST_CLIENT_NODE} -(Reverse)-> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE}"
-  echo "Client Pod on Client Host VF Representor Results (Reverse):" >> "${HWOL_VALIDATION_FILENAME}"
-  echo "Client Pod on Client Host VF Representor Results (Reverse):"
+  HWOL_VALIDATION_FILENAME="${HW_OFFLOAD_LOGS_DIR}/${REVERSE_TEST_FILENAME}"
+  echo "== ${MY_CLUSTER}:${TEST_CLIENT_NODE} -> ${TEST_SERVER_CLUSTER}:${TEST_SERVER_NODE} (Reverse) =="
+  echo -e "= Client Pod on Client Host VF Representor Results (Reverse) =" > "${HWOL_VALIDATION_FILENAME}"
+  echo -e "= Client Pod on Client Host VF Representor Results (Reverse) ="
   TEST_TOOLS_POD=$TOOLS_CLIENT_POD
   TEST_VF_REP=$TEST_CLIENT_CLIENT_VF_REP
   process-vf-rep-stats
   vfRes4=$?
 
-  echo "Client Pod on Server Host VF Representor Results (Reverse):" >> "${HWOL_VALIDATION_FILENAME}"
-  echo
-  echo "Client Pod on Server Host VF Representor Results (Reverse):"
+  echo -e "\r\n= Client Pod on Server Host VF Representor Results (Reverse) =" >> "${HWOL_VALIDATION_FILENAME}"
+  echo -e "\r\n= Client Pod on Server Host VF Representor Results (Reverse) ="
   TEST_TOOLS_POD=$TOOLS_SERVER_POD
   TEST_VF_REP=$TEST_SERVER_CLIENT_VF_REP
   process-vf-rep-stats
   vfRes5=$?
 
-  echo "Server Pod on Server Host VF Representor Results (Reverse):" >> "${HWOL_VALIDATION_FILENAME}"
-  echo
-  echo "Server Pod on Server Host VF Representor Results (Reverse):"
+  echo -e "\r\n= Server Pod on Server Host VF Representor Results (Reverse) =" >> "${HWOL_VALIDATION_FILENAME}"
+  echo -e "\r\n= Server Pod on Server Host VF Representor Results (Reverse) ="
   TEST_TOOLS_POD=$TOOLS_SERVER_POD
   TEST_VF_REP=$TEST_SERVER_IPERF_SERVER_VF_REP
   process-vf-rep-stats
   vfRes6=$?
 
   if [ $vfRes4 -ne 0 ] || [ $vfRes5 -ne 0 ] || [ $vfRes6 -ne 0 ]; then
-    echo -e "${RED}FAILED${NC}\r\n"
+    echo -e "\r\n${RED}FAILED${NC}\r\n"
   else
-    echo -e "${GREEN}SUCCESS${NC}\r\n"
+    echo -e "\r\n${GREEN}SUCCESS${NC}\r\n"
   fi
 }
 

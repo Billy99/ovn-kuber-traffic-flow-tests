@@ -77,6 +77,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ] && [ "$FT_HOSTONLY" == false ]
   TEST_SERVER_CLUSTER=$MY_CLUSTER
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="01-a-pod2pod-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
@@ -110,6 +112,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 1 ] && [ "$FT_HOSTONLY" == false ]
   echo
 
   TEST_FILENAME="01-b-pod2pod-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
   TEST_SERVER_CLUSTER=$MY_CLUSTER
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
 
@@ -161,6 +165,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ] && [ "$FT_HOSTONLY" == false ]
   TEST_SERVER_CLUSTER=$MY_CLUSTER
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="02-a-pod2host-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
@@ -191,6 +197,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 2 ] && [ "$FT_HOSTONLY" == false ]
   TEST_SERVER_CLUSTER=$MY_CLUSTER
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="02-b-pod2host-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_POD_LIST[@]}"
   do
@@ -234,6 +242,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ] && [ "$FT_HOSTONLY" == false ]
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="03-a-pod2clusterIpSvc-podBackend-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_RSP=$POD_SERVER_STRING
@@ -297,6 +307,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 3 ] && [ "$FT_HOSTONLY" == false ]
 
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="03-b-pod2clusterIpSvc-podBackend-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_POD_LIST[@]}"
   do
@@ -374,6 +386,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ] && [ "$FT_HOSTONLY" == false ]
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="04-a-pod2clusterIpSvc-hostBackend-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_RSP=$HOST_SERVER_STRING
@@ -437,6 +451,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 4 ] && [ "$FT_HOSTONLY" == false ]
 
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="04-b-pod2clusterIpSvc-hostBackend-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_POD_LIST[@]}"
   do
@@ -514,6 +530,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ] && [ "$FT_HOSTONLY" == false ]
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="05-a-pod2nodePortSvc-podBackend-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_RSP=$POD_SERVER_STRING
@@ -571,6 +589,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 5 ] && [ "$FT_HOSTONLY" == false ]
     TEST_CLIENT_POD=${REMOTE_CLIENT_POD_LIST[$i]}
     TEST_CLIENT_NODE=${REMOTE_CLIENT_NODE_LIST[$i]}
     TEST_FILENAME="05-b-pod2nodePortSvc-podBackend-diffNode.txt"
+    FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+    REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
     if [ "$CURL" == true ]; then
       TEST_SERVER_RSP=$POD_SERVER_STRING
@@ -634,6 +654,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ] && [ "$FT_HOSTONLY" == false ]
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="06-a-pod2nodePortSvc-hostBackend-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_RSP=$HOST_SERVER_STRING
@@ -688,6 +710,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 6 ] && [ "$FT_HOSTONLY" == false ]
 
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="06-b-pod2nodePortSvc-hostBackend-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_POD_LIST[@]}"
   do
@@ -757,6 +781,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ] && [ "$FT_HOSTONLY" == false ]
   TEST_SERVER_CLUSTER=$MY_CLUSTER
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="07-a-host2pod-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_HTTP_DST=$HTTP_SERVER_POD_IP
@@ -787,6 +813,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 7 ] && [ "$FT_HOSTONLY" == false ]
   TEST_SERVER_CLUSTER=$MY_CLUSTER
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="07-b-host2pod-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_HOST_POD_LIST[@]}"
   do
@@ -831,6 +859,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ] && [ "$FT_CLIENTONLY" == false
   TEST_SERVER_CLUSTER=$MY_CLUSTER
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="08-a-host2host-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_HTTP_DST=$HTTP_SERVER_HOST_IP
@@ -868,6 +898,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 8 ] && [ "$FT_CLIENTONLY" == false
   TEST_SERVER_CLUSTER=$MY_CLUSTER
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="08-b-host2host-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_HOST_POD_LIST[@]}"
   do
@@ -918,6 +950,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="09-a-host2clusterIpSvc-podBackend-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_RSP=$POD_SERVER_STRING
@@ -981,6 +1015,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 9 ] && [ "$FT_HOSTONLY" == false ]
 
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="09-b-host2clusterIpSvc-podBackend-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_HOST_POD_LIST[@]}"
   do
@@ -1058,6 +1094,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 10 ]; then
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="10-a-host2clusterIpSvc-hostBackend-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_RSP=$HOST_SERVER_STRING
@@ -1121,6 +1159,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 10 ]; then
 
   TEST_SERVER_NODE=$SERVER_POD_NODE
   TEST_FILENAME="10-b-host2clusterIpSvc-hostBackend-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_HOST_POD_LIST[@]}"
   do
@@ -1198,6 +1238,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ] && [ "$FT_HOSTONLY" == false 
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="11-a-host2nodePortSvc-podBackend-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_RSP=$POD_SERVER_STRING
@@ -1256,6 +1298,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 11 ] && [ "$FT_HOSTONLY" == false 
 
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="11-b-host2nodePortSvc-podBackend-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_HOST_POD_LIST[@]}"
   do
@@ -1331,6 +1375,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ] && [ "$FT_CLIENTONLY" == fals
   TEST_CLIENT_NODE=$LOCAL_CLIENT_NODE
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="12-a-host2nodePortSvc-hostBackend-sameNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   if [ "$CURL" == true ]; then
     TEST_SERVER_RSP=$HOST_SERVER_STRING
@@ -1397,6 +1443,8 @@ if [ "$TEST_CASE" == 0 ] || [ "$TEST_CASE" == 12 ] && [ "$FT_CLIENTONLY" == fals
 
   TEST_SERVER_NODE=$LOCAL_CLIENT_NODE
   TEST_FILENAME="12-b-host2nodePortSvc-hostBackend-diffNode.txt"
+  FORWARD_TEST_FILENAME="${TEST_FILENAME:0:5}client-server-${TEST_FILENAME:5}"
+  REVERSE_TEST_FILENAME="${TEST_FILENAME:0:5}server-client-${TEST_FILENAME:5}"
 
   for i in "${!REMOTE_CLIENT_HOST_POD_LIST[@]}"
   do

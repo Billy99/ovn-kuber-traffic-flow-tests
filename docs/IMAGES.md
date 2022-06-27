@@ -71,7 +71,7 @@ sudo podman manifest push ft-base-image-0.9-list quay.io/billy99/ft-base-image:0
 ## tools
 
 The `ft-tools` pod uses a Centos Stream9 image base with root/privileged access to the host.
-Many tools and debug packages pulled in (Please see images/ft-tools/Containerfile for details).
+Many tools and debug packages are pulled in (See images/ft-tools/Containerfile for details).
 The image has been built and pushed to `quay.io` for use by this repo.
 
 ```
