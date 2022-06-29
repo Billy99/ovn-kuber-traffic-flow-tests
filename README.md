@@ -22,6 +22,7 @@ This repository contains the yaml files and test scripts to test all the traffic
 - [Test Script Usage](#test-script-usage)
   - [curl](#curl)
   - [iperf3](#iperf3)
+  - [Hardware Offload Validation](#hardware-offload-validation)
   - [ovnkube-trace](#ovnkube-trace)
 - [Container Images](#container-images)
 - [Multi-Cluster](#multi-cluster)
@@ -307,6 +308,9 @@ This script uses ENV Variables to control test. Here are few key ones:
                                  VERBOSE=true ./test.sh
   IPERF                      - 'iperf3' can be run on each flow, off by default. Example:
                                  IPERF=true ./test.sh
+  HWOL                       - Hardware Offload Validation can be run on each applicable flow.
+                               Parameters from IPERF will be used to generate traffic. Example:
+                                 HWOL=true ./test.sh
   OVN_TRACE                  - 'ovn-trace' can be run on each flow, off by deafult. Example:
                                  OVN_TRACE=true ./test.sh
   FT_VARS                    - Print script variables. Off by default. Example:
@@ -362,7 +366,7 @@ Default/Override Values:
     FT_SERVER_NODE_LABEL               ft.ServerPod
     FT_CLIENT_NODE_LABEL               ft.ClientPod
 ```
-  
+
 ### Cleanup Test Pods
 
 To teardown the test setup:
@@ -425,99 +429,155 @@ To run all the tests, simply run the script.
 $ FT_VARS=true ./test.sh
 
 Default/Override Values:
+  Launch Control:
+    FT_HOSTONLY                        false
+    FT_CLIENTONLY                      false
+    FT_NAMESPACE                       default
+    FT_REQ_SERVER_NODE                 all
+    FT_REQ_REMOTE_CLIENT_NODE          first
+    FT_SRIOV_NODE_LABEL                network.operator.openshift.io/external-openvswitch
+    FT_EXPORT_SVC                      false
+  Label Management:
+    FT_SERVER_NODE_LABEL               ft.ServerPod
+    FT_CLIENT_NODE_LABEL               ft.ClientPod
   Test Control:
     TEST_CASE (0 means all)            1
     VERBOSE                            false
     FT_VARS                            true
     FT_NOTES                           true
+    FT_DEBUG                           false
     CURL                               true
     CURL_CMD                           curl -m 5
-    IPERF                              true
+    IPERF                              false
     IPERF_CMD                          iperf3
-    IPERF_TIME                         2
+    IPERF_TIME                         10
+    IPERF_FORWARD_TEST_OPT
+    IPERF_REVERSE_TEST_OPT             -R
+    FT_CLIENT_CPU_MASK
     OVN_TRACE                          false
     OVN_TRACE_CMD                      ./ovnkube-trace -loglevel=5 -tcp
-    FT_REQ_REMOTE_CLIENT_NODE          first
+    FT_SVC_QUALIFIER
+    FT_MC_NAMESPACE                    submariner-operator
+    FT_MC_CO_SERVER_LABEL              submariner.io/gateway=true
   OVN Trace Control:
     OVN_K_NAMESPACE                    ovn-kubernetes
     SSL_ENABLE                         -noSSL
   From YAML Files:
+    NET_ATTACH_DEF_NAME                ftnetattach
+    SRIOV_RESOURCE_NAME                openshift.io/mlnx_bf
+    TEST_IMAGE                         quay.io/billy99/ft-base-image:0.9
     CLIENT_POD_NAME_PREFIX             ft-client-pod
     http Server:
       HTTP_SERVER_POD_NAME             ft-http-server-pod-v4
       HTTP_SERVER_HOST_POD_NAME        ft-http-server-host-v4
       HTTP_CLUSTERIP_POD_SVC_NAME      ft-http-service-clusterip-pod-v4
+      HTTP_CLUSTERIP_POD_SVC_PORT      8080
       HTTP_CLUSTERIP_HOST_SVC_NAME     ft-http-service-clusterip-host-v4
+      HTTP_CLUSTERIP_HOST_SVC_PORT     8079
       HTTP_NODEPORT_SVC_NAME           ft-http-service-nodeport-pod-v4
+      HTTP_NODEPORT_POD_SVC_PORT       30080
       HTTP_NODEPORT_HOST_SVC_NAME      ft-http-service-nodeport-host-v4
+      HTTP_NODEPORT_HOST_SVC_PORT      30079
     iperf Server:
       IPERF_SERVER_POD_NAME            ft-iperf-server-pod-v4
       IPERF_SERVER_HOST_POD_NAME       ft-iperf-server-host-v4
       IPERF_CLUSTERIP_POD_SVC_NAME     ft-iperf-service-clusterip-pod-v4
+      IPERF_CLUSTERIP_POD_SVC_PORT     5201
       IPERF_CLUSTERIP_HOST_SVC_NAME    ft-iperf-service-clusterip-host-v4
+      IPERF_CLUSTERIP_HOST_SVC_PORT    5202
       IPERF_NODEPORT_POD_SVC_NAME      ft-iperf-service-nodeport-pod-v4
+      IPERF_NODEPORT_POD_SVC_PORT      30201
       IPERF_NODEPORT_HOST_SVC_NAME     ft-iperf-service-nodeport-host-v4
+      IPERF_NODEPORT_HOST_SVC_PORT     30202
+    SERVER_PATH                        /etc/httpserver/
     POD_SERVER_STRING                  Server - Pod Backend Reached
     HOST_SERVER_STRING                 Server - Host Backend Reached
     EXTERNAL_SERVER_STRING             The document has moved
+    KUBEAPI_SERVER_STRING              serverAddressByClientCIDRs
   External Access:
     EXTERNAL_IP                        8.8.8.8
     EXTERNAL_URL                       google.com
 Queried Values:
   Pod Backed:
-    HTTP_SERVER_POD_IP                 10.244.2.29
-    IPERF_SERVER_POD_IP                10.244.2.30
-    SERVER_POD_NODE                    ovn-worker3
-    LOCAL_CLIENT_NODE                  ovn-worker3
-    LOCAL_CLIENT_POD                   ft-client-pod-76qlj
-    REMOTE_CLIENT_NODE_LIST             ovn-worker4
-    REMOTE_CLIENT_POD_LIST             ft-client-pod-566xj
-    HTTP_CLUSTERIP_POD_SVC_IPV4        10.96.39.137
+    HTTP_SERVER_POD_IP                 10.131.1.66
+    IPERF_SERVER_POD_IP                10.131.1.67
+    SERVER_POD_NODE                    worker-advnetlab26
+    LOCAL_CLIENT_NODE                  worker-advnetlab26
+    LOCAL_CLIENT_POD                   ft-client-pod-sriov-x2xd7
+    REMOTE_CLIENT_NODE_LIST            worker-advnetlab27
+    REMOTE_CLIENT_POD_LIST             ft-client-pod-sriov-p9z2j
+    HTTP_CLUSTERIP_POD_SVC_IPV4_LIST   172.30.92.190
     HTTP_CLUSTERIP_POD_SVC_PORT        8080
-    HTTP_NODEPORT_POD_SVC_IPV4         10.96.28.182
+    HTTP_NODEPORT_POD_SVC_IPV4_LIST    172.30.65.201
     HTTP_NODEPORT_POD_SVC_PORT         30080
-    IPERF_CLUSTERIP_POD_SVC_IPV4       10.96.153.56
+    IPERF_CLUSTERIP_POD_SVC_IPV4_LIST  172.30.164.182
     IPERF_CLUSTERIP_POD_SVC_PORT       5201
-    IPERF_NODEPORT_POD_SVC_IPV4        10.96.37.54
+    IPERF_NODEPORT_POD_SVC_IPV4_LIST   172.30.118.3
     IPERF_NODEPORT_POD_SVC_PORT        30201
   Host backed:
-    HTTP_SERVER_HOST_IP                172.18.0.5
-    IPERF_SERVER_HOST_IP               172.18.0.5
-    SERVER_HOST_NODE                   ovn-worker3
-    LOCAL_CLIENT_HOST_NODE             ovn-worker3
-    LOCAL_CLIENT_HOST_POD              ft-client-pod-host-kttz2
-    REMOTE_CLIENT_HOST_NODE_LIST       ovn-worker4
-    REMOTE_CLIENT_HOST_POD_LIST        ft-client-pod-host-hp5r2
-    HTTP_CLUSTERIP_HOST_SVC_IPV4       10.96.21.56
-    HTTP_CLUSTERIP_HOST_SVC_PORT       8081
-    HTTP_NODEPORT_HOST_SVC_IPV4        10.96.252.33
-    HTTP_NODEPORT_HOST_SVC_PORT        30081
-    IPERF_CLUSTERIP_HOST_SVC_IPV4      10.96.11.170
+    HTTP_SERVER_HOST_IP                192.168.111.33
+    IPERF_SERVER_HOST_IP               192.168.111.33
+    SERVER_HOST_NODE                   worker-advnetlab26
+    LOCAL_CLIENT_HOST_NODE             worker-advnetlab26
+    LOCAL_CLIENT_HOST_POD              ft-client-pod-host-xvhd5
+    REMOTE_CLIENT_HOST_NODE_LIST       worker-advnetlab27
+    REMOTE_CLIENT_HOST_POD_LIST        ft-client-pod-host-tc9h6
+    HTTP_CLUSTERIP_HOST_SVC_IPV4_LIST  172.30.4.237
+    HTTP_CLUSTERIP_HOST_SVC_PORT       8079
+    HTTP_NODEPORT_HOST_SVC_IPV4_LIST   172.30.232.255
+    HTTP_NODEPORT_HOST_SVC_PORT        30079
+    IPERF_CLUSTERIP_HOST_SVC_IPV4_LIST 172.30.203.69
     IPERF_CLUSTERIP_HOST_SVC_PORT      5202
-    IPERF_NODEPORT_HOST_SVC_IPV4       10.96.154.57
+    IPERF_NODEPORT_HOST_SVC_IPV4_LIST  172.30.48.14
     IPERF_NODEPORT_HOST_SVC_PORT       30202
+  Kubernetes API:
+    HTTP_CLUSTERIP_KUBEAPI_SVC_IPV4    172.30.0.1
+    HTTP_CLUSTERIP_KUBEAPI_SVC_PORT    443
+    HTTP_CLUSTERIP_KUBEAPI_EP_IP       192.168.111.20
+    HTTP_CLUSTERIP_KUBEAPI_EP_PORT     6443
+    HTTP_CLUSTERIP_KUBEAPI_SVC_NAME    kubernetes.default.svc
 
 
-FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
-----------------------------------------------------------
+
+FLOW 01: Pod to Pod traffic
+---------------------------
 
 *** 1-a: Pod to Pod (Same Node) ***
 
-kubectl exec -it ft-client-pod-76qlj -- curl -m 5 "http://10.244.2.29:8080/"
+=== CURL ===
+admin:worker-advnetlab26 -> admin:worker-advnetlab26
+kubectl exec -n default ft-client-pod-sriov-x2xd7 -- curl -m 5 "http://10.131.1.66:8080/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   164  100   164    0     0    404      0 --:--:-- --:--:-- --:--:--   403
+
 SUCCESS
 
 
 *** 1-b: Pod to Pod (Different Node) ***
-kubectl exec -it ft-client-pod-566xj -- curl -m 5 "http://10.244.2.29:8080/"
+
+=== CURL ===
+admin:worker-advnetlab27 -> admin:worker-advnetlab26
+kubectl exec -n default ft-client-pod-sriov-p9z2j -- curl -m 5 "http://10.131.1.66:8080/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   164  100   164    0     0    471      0 --:--:-- --:--:-- --:--:--   472
+
 SUCCESS
 
 
 FLOW 02: Pod -> Cluster IP Service traffic
 ------------------------------------------
 
-*** 2-a: Pod -> Cluster IP Service traffic (Same Node) ***
+*** 2-a: Pod to Host (Same Node) ***
 
-kubectl exec -it ft-client-pod-2twqq -- curl -m 5 "http://10.96.145.26:8080/"
+=== CURL ===
+admin:worker-advnetlab26 -> admin:worker-advnetlab26
+kubectl exec -n default ft-client-pod-sriov-x2xd7 -- curl -m 5 "http://192.168.111.33:8079/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   170  100   170    0     0    740      0 --:--:-- --:--:-- --:--:--   739
+
 SUCCESS
 
 :
@@ -539,6 +599,11 @@ TEST_CASE=3 VERBOSE=true ./test.sh
 and default is 10 seconds):
 ```
 TEST_CASE=3 IPERF=true IPERF_TIME=2 ./test.sh
+```
+
+* Hardware Offload Validation is disabled by default. To enable:
+```
+TEST_CASE=3 HWOL=true ./test.sh
 ```
 
 * `ovnkube-trace` is disabled by default. To enable:
@@ -574,57 +639,82 @@ is working. `curl` is enabled by default, but can be disabled using
 ```
 $ TEST_CASE=1 ./test.sh
 
-FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
-----------------------------------------------------------
+FLOW 01: Pod to Pod traffic
+---------------------------
 
 *** 1-a: Pod to Pod (Same Node) ***
 
-kubectl exec -it ft-client-pod-2twqq -- curl -m 5 "http://10.244.2.26:8080/"
+=== CURL ===
+admin:worker-advnetlab26 -> admin:worker-advnetlab26
+kubectl exec -n default ft-client-pod-sriov-x2xd7 -- curl -m 5 "http://10.131.1.66:8080/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   164  100   164    0     0    420      0 --:--:-- --:--:-- --:--:--   419
+
 SUCCESS
 
 
 *** 1-b: Pod to Pod (Different Node) ***
 
-kubectl exec -it ft-client-pod-gc6dw -- curl -m 5 "http://10.244.2.26:8080/"
+=== CURL ===
+admin:worker-advnetlab27 -> admin:worker-advnetlab26
+kubectl exec -n default ft-client-pod-sriov-p9z2j -- curl -m 5 "http://10.131.1.66:8080/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   164  100   164    0     0    567      0 --:--:-- --:--:-- --:--:--   569
+
 SUCCESS
+
 ```
 
 ### iperf3
 
 `iperf3` is used to test packet throughput. It can be used to determine
 the rough throughput of each flow. When enabled, `iperf3` is run and a
-summary of the results is printed.
+summary of the results is printed. Both forward and reverse directions
+of traffic are tested. Traffic is first sent from client, then traffic
+is sent from server (reverse option in `iperf3`).
 
 ```
 $ TEST_CASE=1 IPERF=true IPERF_TIME=2 ./test.sh
 
-FLOW 01: Typical Pod to Pod traffic (using cluster subnet)
-----------------------------------------------------------
+FLOW 01: Pod to Pod traffic
+---------------------------
 
 *** 1-a: Pod to Pod (Same Node) ***
 
-kubectl exec -it ft-client-pod-2twqq -- curl -m 5 "http://10.244.2.26:8080/"
+=== CURL ===
+admin:worker-advnetlab26 -> admin:worker-advnetlab26
+kubectl exec -n default ft-client-pod-sriov-x2xd7 -- curl -m 5 "http://10.131.1.66:8080/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   164  100   164    0     0    419      0 --:--:-- --:--:-- --:--:--   420
+
 SUCCESS
 
-kubectl exec -it ft-client-pod-2twqq -- iperf3 -c 10.244.2.27 -p 5201 -t 2
-Summary (see iperf-logs/1a-pod2pod-same-node.txt for full detail):
+=== IPERF ===
+== admin:worker-advnetlab26 -> admin:worker-advnetlab26 ==
+kubectl exec -n default ft-client-pod-sriov-x2xd7 --  iperf3  -c 10.131.1.67 -p 5201 -t 2
+Summary (see iperf-logs/01-a-client-server-pod2pod-sameNode.txt for full detail):
 [ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-2.00   sec  3.43 GBytes  14.7 Gbits/sec  334             sender
-[  5]   0.00-2.04   sec  3.43 GBytes  14.4 Gbits/sec                  receiver
+[  5]   0.00-2.00   sec  5.62 GBytes  24.1 Gbits/sec  947             sender
+[  5]   0.00-2.00   sec  5.62 GBytes  24.1 Gbits/sec                  receiver
+
+SUCCESS
+
+== admin:worker-advnetlab26 -> admin:worker-advnetlab26 (Reverse) ==
+kubectl exec -n default ft-client-pod-sriov-x2xd7 --  iperf3 -R -c 10.131.1.67 -p 5201 -t 2
+Summary (see iperf-logs/01-a-server-client-pod2pod-sameNode.txt for full detail):
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-2.00   sec  6.29 GBytes  27.0 Gbits/sec  2187             sender
+[  5]   0.00-2.00   sec  6.29 GBytes  27.0 Gbits/sec                  receiver
+
 SUCCESS
 
 
 *** 1-b: Pod to Pod (Different Node) ***
 
-kubectl exec -it ft-client-pod-gc6dw -- curl -m 5 "http://10.244.2.26:8080/"
-SUCCESS
-
-kubectl exec -it ft-client-pod-gc6dw -- iperf3 -c 10.244.2.27 -p 5201 -t 2
-Summary (see iperf-logs/1b-pod2pod-diff-node.txt for full detail):
-[ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-2.00   sec   633 MBytes  2.65 Gbits/sec    0             sender
-[  5]   0.00-2.04   sec   632 MBytes  2.60 Gbits/sec                  receiver
-SUCCESS
+:
 ```
 
 When `iperf3` is run on each sub-flow, the full output of the command is piped to
@@ -632,41 +722,59 @@ files in the `iperf-logs/` directory. Use `VERBOSE=true` to when command is exec
 to see full output command is run. Below is a list of sample output files:
 
 ```
-$ ls -al iperf-logs
-total 132
-drwxrwxr-x. 2 user user 4096 Jun 10 16:46 .
-drwxrwxr-x. 7 user user 4096 Jun 11 15:04 ..
--rw-rw-r--. 1 user user  624 Jun 10 16:51 01-a-pod2pod-sameNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 01-b-pod2pod-diffNode.txt
--rw-rw-r--. 1 user user  622 Jun 10 16:51 02-a-pod2host-sameNode.txt
--rw-rw-r--. 1 user user  622 Jun 10 16:51 02-b-pod2host-diffNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 03-a-pod2clusterIpSvc-podBackend-sameNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 03-b-pod2clusterIpSvc-podBackend-diffNode.txt
--rw-rw-r--. 1 user user  628 Jun 10 16:51 04-a-pod2clusterIpSvc-hostBackend-sameNode.txt
--rw-rw-r--. 1 user user  628 Jun 10 16:51 04-b-pod2clusterIpSvc-hostBackend-diffNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 05-a-pod2nodePortSvc-podBackend-sameNode.txt
--rw-rw-r--. 1 user user   48 Jun 10 16:51 05-b-pod2nodePortSvc-podBackend-diffNode.txt
--rw-rw-r--. 1 user user  624 Jun 10 16:51 06-a-pod2nodePortSvc-hostBackend-sameNode.txt
--rw-rw-r--. 1 user user   48 Jun 10 16:51 06-b-pod2nodePortSvc-hostBackend-diffNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:51 07-a-host2pod-sameNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:51 07-b-host2pod-diffNode.txt
--rw-rw-r--. 1 user user  621 Jun 10 16:52 08-a-host2host-sameNode.txt
--rw-rw-r--. 1 user user  621 Jun 10 16:52 08-b-host2host-diffNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:52 09-a-host2clusterIpSvc-podBackend-sameNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:52 09-b-host2clusterIpSvc-podBackend-diffNode.txt
--rw-rw-r--. 1 user user  627 Jun 10 16:52 10-a-host2clusterIpSvc-hostBackend-sameNode.txt
--rw-rw-r--. 1 user user  627 Jun 10 16:52 10-b-host2clusterIpSvc-hostBackend-diffNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:52 11-a-host2nodePortSvc-podBackend-sameNode.txt
--rw-rw-r--. 1 user user   48 Jun 10 16:52 11-b-host2nodePortSvc-podBackend-diffNode.txt
--rw-rw-r--. 1 user user  623 Jun 10 16:52 12-a-host2nodePortSvc-hostBackend-sameNode.txt
--rw-rw-r--. 1 user user   48 Jun 10 16:52 12-b-host2nodePortSvc-hostBackend-diffNode.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 13-a-pod2external.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 13-b-host2external.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 14-a-external2clusterIpSvc-podBackend.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 14-b-external2clusterIpSvc-hostBackend.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:52 15-a-external2nodePortSvc-podBackend.txt
--rw-rw-r--. 1 user user   42 Jun 10 16:53 15-b-external2nodePortSvc-hostBackend.txt
--rw-rw-r--. 1 user user   71 Jun  9 13:51 .gitignore
+$ ls -la
+total 204
+drwxr-xr-x. 2 root root 4096 Jun 27 17:09 .
+drwxr-xr-x. 9 root root 4096 Jun 27 15:36 ..
+-rw-r--r--. 1 root root 2833 Jun 27 15:37 01-a-client-server-pod2pod-sameNode.txt
+-rw-r--r--. 1 root root 2617 Jun 27 15:38 01-a-server-client-pod2pod-sameNode.txt
+-rw-r--r--. 1 root root 2826 Jun 27 15:42 01-b-client-server-pod2pod-diffNode.txt
+-rw-r--r--. 1 root root 2616 Jun 27 15:43 01-b-server-client-pod2pod-diffNode.txt
+-rw-r--r--. 1 root root 2833 Jun 27 15:47 02-a-client-server-pod2host-sameNode.txt
+-rw-r--r--. 1 root root 2626 Jun 27 15:48 02-a-server-client-pod2host-sameNode.txt
+-rw-r--r--. 1 root root 2832 Jun 27 15:48 02-b-client-server-pod2host-diffNode.txt
+-rw-r--r--. 1 root root 2625 Jun 27 15:49 02-b-server-client-pod2host-diffNode.txt
+-rw-r--r--. 1 root root 2837 Jun 27 15:50 03-a-client-server-pod2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 2626 Jun 27 15:50 03-a-server-client-pod2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 2832 Jun 27 15:55 03-b-client-server-pod2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2625 Jun 27 15:55 03-b-server-client-pod2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2831 Jun 27 16:00 04-a-client-server-pod2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 2623 Jun 27 16:00 04-a-server-client-pod2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 2829 Jun 27 16:05 04-b-client-server-pod2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 2622 Jun 27 16:05 04-b-server-client-pod2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 2839 Jun 27 16:10 05-a-client-server-pod2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 2628 Jun 27 16:10 05-a-server-client-pod2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 2834 Jun 27 16:15 05-b-client-server-pod2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2627 Jun 27 16:16 05-b-server-client-pod2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2835 Jun 27 16:20 06-a-client-server-pod2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 2628 Jun 27 16:21 06-a-server-client-pod2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 2835 Jun 27 16:25 06-b-client-server-pod2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 2627 Jun 27 16:26 06-b-server-client-pod2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 2826 Jun 27 16:30 07-a-client-server-host2pod-sameNode.txt
+-rw-r--r--. 1 root root 2615 Jun 27 16:31 07-a-server-client-host2pod-sameNode.txt
+-rw-r--r--. 1 root root 2824 Jun 27 16:31 07-b-client-server-host2pod-diffNode.txt
+-rw-r--r--. 1 root root 2615 Jun 27 16:32 07-b-server-client-host2pod-diffNode.txt
+-rw-r--r--. 1 root root 2834 Jun 27 16:32 08-a-client-server-host2host-sameNode.txt
+-rw-r--r--. 1 root root 2627 Jun 27 16:33 08-a-server-client-host2host-sameNode.txt
+-rw-r--r--. 1 root root 2835 Jun 27 16:33 08-b-client-server-host2host-diffNode.txt
+-rw-r--r--. 1 root root 2628 Jun 27 16:34 08-b-server-client-host2host-diffNode.txt
+-rw-r--r--. 1 root root 2835 Jun 27 16:34 09-a-client-server-host2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 2627 Jun 27 16:35 09-a-server-client-host2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 2835 Jun 27 16:40 09-b-client-server-host2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2627 Jun 27 16:40 09-b-server-client-host2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2834 Jun 27 16:45 10-a-client-server-host2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 2626 Jun 27 16:45 10-a-server-client-host2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 2833 Jun 27 16:50 10-b-client-server-host2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 2625 Jun 27 16:50 10-b-server-client-host2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 2838 Jun 27 16:55 11-a-client-server-host2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 2629 Jun 27 16:55 11-a-server-client-host2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root 2839 Jun 27 17:00 11-b-client-server-host2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2630 Jun 27 17:00 11-b-server-client-host2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root 2776 Jun 27 17:05 12-a-client-server-host2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 2631 Jun 27 17:06 12-a-server-client-host2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root  123 Jun 27 17:09 12-b-client-server-host2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root 2630 Jun 27 17:10 12-b-server-client-host2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root   71 Jun 27 15:36 .gitignore
 ```
 
 *NOTE:* The *'cleanup.sh'* script does not remove these files and each subsequent run of
@@ -679,6 +787,227 @@ in and set by the script. Example:
 
 ```
 FT_CLIENT_CPU_MASK=0x100 TEST_CASE=1 IPERF=true CURL=false ./test.sh
+```
+
+### Hardware Offload Validation
+
+Hardware Offload Validation is used to determine whether a flow has been hardware
+offloaded by examining the RX/TX packet counters from `ethtool` on the
+VF representors. When enabled, `iperf3` is run in both forward and reverse traffic
+directions, `ethtool` on the VF representor is run at the beginning and end of the
+`iperf3` duration, `tcpdump` on the VF representor is run during the `iperf3` duration,
+lastly a summary of the results is printed.
+
+```
+$ TEST_CASE=1 HWOL=true ./test.sh
+
+FLOW 01: Pod to Pod traffic
+---------------------------
+
+*** 1-a: Pod to Pod (Same Node) ***
+
+=== CURL ===
+admin:worker-advnetlab26 -> admin:worker-advnetlab26
+kubectl exec -n default ft-client-pod-sriov-x2xd7 -- curl -m 5 "http://10.131.1.66:8080/etc/httpserver/"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   164  100   164    0     0    346      0 --:--:-- --:--:-- --:--:--   346
+
+SUCCESS
+
+=== HWOL ===
+== admin:worker-advnetlab26 -> admin:worker-advnetlab26 ==
+= Client Pod on Client Host VF Representor Results =
+kubectl exec -n default ft-client-pod-sriov-x2xd7 --  iperf3  -c 10.131.1.67 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "ethtool -S 8a0d327328be763 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 8a0d327328be763 -n not arp"
+Summary (see hwol-logs/01-a-client-server-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 8a0d327328be763:
+RX Packets: 506930587 - 506930587 = 0
+TX Packets: 786188362 - 786188362 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 8a0d327328be763, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   118 GBytes  25.4 Gbits/sec  18295             sender
+[  5]   0.00-40.00  sec   118 GBytes  25.4 Gbits/sec                  receiver
+
+= Client Pod on Server Host VF Representor Results =
+kubectl exec -n default ft-client-pod-sriov-x2xd7 --  iperf3  -c 10.131.1.67 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "ethtool -S 8a0d327328be763 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 8a0d327328be763 -n not arp"
+Summary (see hwol-logs/01-a-client-server-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 8a0d327328be763:
+RX Packets: 506932996 - 506932996 = 0
+TX Packets: 786188458 - 786188458 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 8a0d327328be763, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   119 GBytes  25.6 Gbits/sec  22480             sender
+[  5]   0.00-40.00  sec   119 GBytes  25.5 Gbits/sec                  receiver
+
+= Server Pod on Server Host VF Representor Results =
+kubectl exec -n default ft-client-pod-sriov-x2xd7 --  iperf3  -c 10.131.1.67 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "ethtool -S 3ff7cd6d4ceea68 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 3ff7cd6d4ceea68 -n not arp"
+Summary (see hwol-logs/01-a-client-server-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 8a0d327328be763:
+RX Packets: 72890864 - 72890863 = 1
+TX Packets: 1188566712 - 1188566711 = 1
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 3ff7cd6d4ceea68, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   115 GBytes  24.8 Gbits/sec  20058             sender
+[  5]   0.00-40.00  sec   115 GBytes  24.8 Gbits/sec                  receiver
+
+SUCCESS
+
+== admin:worker-advnetlab26 -> admin:worker-advnetlab26 (Reverse) ==
+= Client Pod on Client Host VF Representor Results (Reverse) =
+kubectl exec -n default ft-client-pod-sriov-x2xd7 --  iperf3 -R -c 10.131.1.67 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "ethtool -S 8a0d327328be763 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 8a0d327328be763 -n not arp"
+Summary (see hwol-logs/01-a-server-client-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 8a0d327328be763:
+RX Packets: 506935220 - 506935220 = 0
+TX Packets: 786189775 - 786189775 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 8a0d327328be763, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   119 GBytes  25.5 Gbits/sec  20332             sender
+[  5]   0.00-40.00  sec   119 GBytes  25.5 Gbits/sec                  receiver
+
+= Client Pod on Server Host VF Representor Results (Reverse) =
+kubectl exec -n default ft-client-pod-sriov-x2xd7 --  iperf3 -R -c 10.131.1.67 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "ethtool -S 8a0d327328be763 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 8a0d327328be763 -n not arp"
+Summary (see hwol-logs/01-a-server-client-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 8a0d327328be763:
+RX Packets: 506935309 - 506935309 = 0
+TX Packets: 786192678 - 786192678 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 8a0d327328be763, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   118 GBytes  25.3 Gbits/sec  20214             sender
+[  5]   0.00-40.00  sec   118 GBytes  25.3 Gbits/sec                  receiver
+
+= Server Pod on Server Host VF Representor Results (Reverse) =
+kubectl exec -n default ft-client-pod-sriov-x2xd7 --  iperf3 -R -c 10.131.1.67 -p 5201 -t 40
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "ethtool -S 3ff7cd6d4ceea68 | sed -n 's/^\s\+//p'"
+kubectl exec -n "default" "ft-tools-wlmt5" -- /bin/sh -c "timeout --preserve-status 25 tcpdump -v -i 3ff7cd6d4ceea68 -n not arp"
+Summary (see hwol-logs/01-a-server-client-pod2pod-sameNode.txt for full detail):
+Summary Ethtool results for 8a0d327328be763:
+RX Packets: 72898350 - 72898350 = 0
+TX Packets: 1188566934 - 1188566934 = 0
+Summary Tcpdump Output:
+dropped privs to tcpdump
+tcpdump: listening on 3ff7cd6d4ceea68, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+0 packets captured
+0 packets received by filter
+0 packets dropped by kernel
+
+Summary Iperf Output:
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-40.00  sec   118 GBytes  25.3 Gbits/sec  23220             sender
+[  5]   0.00-40.00  sec   118 GBytes  25.3 Gbits/sec                  receiver
+
+SUCCESS
+
+
+*** 1-b: Pod to Pod (Different Node) ***
+
+:
+```
+
+When Hardware Offload Validation is run on each sub-flow, the full output of the command
+is piped to files in the `hwol-logs/` directory. Use `FT_DEBUG=true` to see all commands
+that were used to determine the VF representor and other parameters. Use `VERBOSE=true` to
+when command is executed to see full output command is run. Below is a list of sample output
+files:
+
+```
+$ ls -la
+total 9202220
+drwxr-xr-x. 2 root root       4096 Jun 27 17:13 .
+drwxr-xr-x. 9 root root       4096 Jun 27 15:36 ..
+-rw-r--r--. 1 root root      12933 Jun 27 15:40 01-a-client-server-pod2pod-sameNode.txt
+-rw-r--r--. 1 root root     498488 Jun 27 15:42 01-a-server-client-pod2pod-sameNode.txt
+-rw-r--r--. 1 root root  746031347 Jun 27 15:45 01-b-client-server-pod2pod-diffNode.txt
+-rw-r--r--. 1 root root  757263512 Jun 27 15:47 01-b-server-client-pod2pod-diffNode.txt
+-rw-r--r--. 1 root root      12829 Jun 27 15:52 03-a-client-server-pod2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root      11993 Jun 27 15:54 03-a-server-client-pod2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root  743947340 Jun 27 15:57 03-b-client-server-pod2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root  763566463 Jun 27 15:59 03-b-server-client-pod2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root  646183167 Jun 27 16:02 04-a-client-server-pod2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 1197152583 Jun 27 16:04 04-a-server-client-pod2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root  143015503 Jun 27 16:07 04-b-client-server-pod2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root  103515987 Jun 27 16:09 04-b-server-client-pod2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root      12869 Jun 27 16:12 05-a-client-server-pod2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root      12027 Jun 27 16:14 05-a-server-client-pod2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root  103712806 Jun 27 16:18 05-b-client-server-pod2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root  102064701 Jun 27 16:20 05-b-server-client-pod2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root  636825401 Jun 27 16:23 06-a-client-server-pod2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root 1136208125 Jun 27 16:25 06-a-server-client-pod2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root   88201000 Jun 27 16:28 06-b-client-server-pod2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root   97731608 Jun 27 16:30 06-b-server-client-pod2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root  512896760 Jun 27 16:37 09-a-client-server-host2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root  214469570 Jun 27 16:39 09-a-server-client-host2clusterIpSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root  434620472 Jun 27 16:42 09-b-client-server-host2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root  198723790 Jun 27 16:44 09-b-server-client-host2clusterIpSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root      12869 Jun 27 16:47 10-a-client-server-host2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root      12035 Jun 27 16:49 10-a-server-client-host2clusterIpSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root      12854 Jun 27 16:52 10-b-client-server-host2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root      12019 Jun 27 16:54 10-b-server-client-host2clusterIpSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root  438399942 Jun 27 16:57 11-a-client-server-host2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root  220658127 Jun 27 16:59 11-a-server-client-host2nodePortSvc-podBackend-sameNode.txt
+-rw-r--r--. 1 root root   79049834 Jun 27 17:02 11-b-client-server-host2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root   58111736 Jun 27 17:05 11-b-server-client-host2nodePortSvc-podBackend-diffNode.txt
+-rw-r--r--. 1 root root      12883 Jun 27 17:08 12-a-client-server-host2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root       7090 Jun 27 17:09 12-a-server-client-host2nodePortSvc-hostBackend-sameNode.txt
+-rw-r--r--. 1 root root       2356 Jun 27 17:11 12-b-client-server-host2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root      12037 Jun 27 17:13 12-b-server-client-host2nodePortSvc-hostBackend-diffNode.txt
+-rw-r--r--. 1 root root         70 Jun 27 15:36 .gitignore
+```
+
+*NOTE:* The *'cleanup.sh'* script does not remove these files and each subsequent run of
+*'test.sh'* overwrites the previous test run. They can be removed manually or using
+`CLEAN_ALL=true ./cleanup.sh`.
+
+An additional variable is supported when running Hardware Offload Validation that allows
+the `iperf3` executable to be pinned to a CPU. The CPU Mask is calculated outside of Flow-Test
+and simply passed in and set by the script. Example:
+
+```
+FT_CLIENT_CPU_MASK=0x100 TEST_CASE=1 HWOL=true CURL=false ./test.sh
 ```
 
 ### ovnkube-trace
@@ -745,7 +1074,7 @@ Test scripts have been setup to run in a Multi-Cluster environment. It has only 
 with [Submariner](https://github.com/submariner-io) and the clusters themselves need to already
 be running. For Multi-Cluster, Flow-Tester is deployed in one of two modes:
 * `Full Mode:` Normal deployment of Flow-Tester pods and services and all the Flow-Tester
-  Services are exported.  
+  Services are exported.
 * `Client-Only Mode:` Only Client Pods are created, no Server Pods or Services.
 
 For Multi-Cluster, the following scripts have been added:
@@ -877,7 +1206,7 @@ combination of paths are tested:
 * PATH 07: B-C -- C-B
 * PATH 08: B-C -- C-A
 
-Once all the Paths have been tested, all the routes are restored and the script finds the next set of 
+Once all the Paths have been tested, all the routes are restored and the script finds the next set of
 clusters to test.
 
 To test all combinations (which is the default), use:

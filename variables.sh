@@ -43,11 +43,15 @@ CURL_CMD=${CURL_CMD:-curl -m 5}
 IPERF=${IPERF:-false}
 IPERF_CMD=${IPERF_CMD:-iperf3}
 IPERF_TIME=${IPERF_TIME:-10}
+IPERF_FORWARD_TEST_OPT=${IPERF_FORWARD_TEST_OPT:-""}
+IPERF_REVERSE_TEST_OPT=${IPERF_REVERSE_TEST_OPT:-"-R"}
 # Trace Control
 OVN_TRACE=${OVN_TRACE:-false}
 OVN_TRACE_CMD=${OVN_TRACE_CMD:-./ovnkube-trace -loglevel=5 -tcp}
 OVN_K_NAMESPACE=${OVN_K_NAMESPACE:-"ovn-kubernetes"}
 SSL_ENABLE=${SSL_ENABLE:-"-noSSL"}
+# Hardware Offload Validation Control
+HWOL=${HWOL:-false}
 # External Access
 EXTERNAL_IP=${EXTERNAL_IP:-8.8.8.8}
 EXTERNAL_URL=${EXTERNAL_URL:-google.com}
@@ -95,6 +99,7 @@ IPERF_CLUSTERIP_HOST_SVC_PORT=${IPERF_CLUSTERIP_HOST_SVC_PORT:-5202}
 IPERF_NODEPORT_POD_SVC_PORT=${IPERF_NODEPORT_POD_SVC_PORT:-30201}
 IPERF_NODEPORT_HOST_SVC_PORT=${IPERF_NODEPORT_HOST_SVC_PORT:-30202}
 
+TOOLS_POD_NAME=${TOOLS_POD_NAME:-ft-tools}
 
 SERVER_PATH=${SERVER_PATH:-"/etc/httpserver/"}
 POD_SERVER_STRING=${POD_SERVER_STRING:-"Server - Pod Backend Reached"}
@@ -110,6 +115,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 IPERF_LOGS_DIR="iperf-logs"
 OVN_TRACE_LOGS_DIR="ovn-traces"
+HW_OFFLOAD_LOGS_DIR="hwol-logs"
 
 LOCAL_CLIENT_NODE=
 LOCAL_CLIENT_POD=
@@ -187,6 +193,8 @@ if [ ${COMMAND} == "test" ] ; then
   echo "    IPERF                              $IPERF"
   echo "    IPERF_CMD                          $IPERF_CMD"
   echo "    IPERF_TIME                         $IPERF_TIME"
+  echo "    IPERF_FORWARD_TEST_OPT             $IPERF_FORWARD_TEST_OPT"
+  echo "    IPERF_REVERSE_TEST_OPT             $IPERF_REVERSE_TEST_OPT"
   echo "    FT_CLIENT_CPU_MASK                 $FT_CLIENT_CPU_MASK"
   echo "    OVN_TRACE                          $OVN_TRACE"
   echo "    OVN_TRACE_CMD                      $OVN_TRACE_CMD"
@@ -340,6 +348,9 @@ process-help() {
       echo "                                 VERBOSE=true ./test.sh"
       echo "  IPERF                      - 'iperf3' can be run on each flow, off by default. Example:"
       echo "                                 IPERF=true ./test.sh"
+      echo "  HWOL                       - Hardware Offload Validation can be run on each applicable flow."
+      echo "                               Parameters from IPERF will be used to generate traffic. Example:"
+      echo "                                 HWOL=true ./test.sh"
       echo "  OVN_TRACE                  - 'ovn-trace' can be run on each flow, off by deafult. Example:"
       echo "                                 OVN_TRACE=true ./test.sh"
       echo "  CURL_CMD                   - Curl command to run. Allows additional parameters to be"
@@ -441,8 +452,8 @@ query-dynamic-data() {
     # Local Client Node is the same Node Server is running on.
     LOCAL_CLIENT_NODE=$SERVER_POD_NODE
   else
-  	# In Client Only, there are no Server Nodes, so leave blank and logic below
-  	# will pick the first non-Master. 
+    # In Client Only, there are no Server Nodes, so leave blank and logic below
+    # will pick the first non-Master.
     SERVER_POD_NODE=$REMOTE
     SVCNAME_CLUSTER=$UNKNOWN
 
@@ -509,7 +520,7 @@ query-dynamic-data() {
       fi
     fi
   done
-  
+
   #
   # Determine Local and Remote Pods
   #

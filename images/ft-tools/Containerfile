@@ -1,0 +1,8 @@
+FROM quay.io/centos/amd64:stream9
+
+RUN curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/CentOS_8/devel:kubic:libcontainers:stable.repo \
+curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:${VERSION}.repo https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:${VERSION}/CentOS_8/devel:kubic:libcontainers:stable:cri-o:${VERSION}.repo
+
+RUN INSTALL_PKGS="vim wget jq git cri-tools net-tools iproute pciutils ethtool httpd iperf3 tcpdump util-linux" && yum install -y ${INSTALL_PKGS}
+
+CMD ["/bin/bash"]

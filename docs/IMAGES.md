@@ -6,7 +6,7 @@ This document describes the container images used by this repo and how to rebuil
 ## Table of Contents
 
 - [http-server, iperf-server and client Images](#http-server-iperf-server-and-client-images)
-
+- [tools](#tools)
 
 ## http-server, iperf-server and client Images
 
@@ -70,4 +70,58 @@ sudo podman manifest push ft-base-image-0.9-list quay.io/billy99/ft-base-image:0
 
 ## tools
 
-This is not a private image. Just using https://github.com/nicolaka/netshoot as the tools image.
+The `ft-tools` pod uses a Centos Stream9 image base with root/privileged access to the host.
+Many tools and debug packages are pulled in (See images/ft-tools/Containerfile for details).
+The image has been built and pushed to `quay.io` for use by this repo.
+
+```
+quay.io/wizhao/ft-tools:0.9
+```
+
+The image has been built for multi-arch. The image must be built for each architecture
+on a machine of that architecture. Then a manifest is created, pointing to each
+architecture image.
+
+From `x86` machine:
+
+```
+mkdir -p ~/src/; cd ~/src/
+git clone https://github.com/billy99/ovn-kuber-traffic-flow-tests.git
+cd ~/src/ovn-kuber-traffic-flow-tests/images/ft-tools/
+
+sudo podman build -t quay.io/wizhao/ft-tools:0.9-x86_64 -f ./Containerfile .
+
+sudo podman login quay.io
+sudo podman push quay.io/wizhao/ft-tools:0.9-x86_64
+```
+
+From `arm` machine:
+
+```
+mkdir -p ~/src/; cd ~/src/
+git clone https://github.com/billy99/ovn-kuber-traffic-flow-tests.git
+cd ~/src/ovn-kuber-traffic-flow-tests/images/ft-tools/
+
+sudo podman build -t quay.io/wizhao/ft-tools:0.9-aarch64 -f ./Containerfile .
+
+sudo podman login quay.io
+sudo podman push quay.io/wizhao/ft-tools:0.9-aarch64
+```
+Or from an x86 server:
+```
+sudo podman build --platform linux/arm64 -t quay.io/wizhao/ft-tools:0.9-aarch64 -f ./Containerfile .
+```
+
+From any machine:
+```
+sudo podman manifest create ft-tools-0.9-list
+
+sudo podman pull quay.io/wizhao/ft-tools:0.9-x86_64
+sudo podman manifest add ft-tools-0.9-list quay.io/wizhao/ft-tools:0.9-x86_64
+
+sudo podman pull quay.io/wizhao/ft-tools:0.9-aarch64
+sudo podman manifest add ft-tools-0.9-list quay.io/wizhao/ft-tools:0.9-aarch64
+
+sudo podman login quay.io
+sudo podman manifest push ft-tools-0.9-list quay.io/wizhao/ft-tools:0.9
+```

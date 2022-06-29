@@ -19,11 +19,28 @@ spec:
       hostNetwork: true
       containers:
       - name: ft-tools
-        image: nicolaka/netshoot
+        image: quay.io/wizhao/ft-tools:0.9
         command:
           - /sbin/init
         imagePullPolicy: IfNotPresent
         securityContext:
           privileged: true
-      nodeSelector:
-        ft.ClientPod: client
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /host
+          name: host
+      volumes:
+      - hostPath:
+          path: /
+          type: Directory
+        name: host
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: ft.ClientPod
+                operator: In
+                values:
+                - sriov
+                - client
